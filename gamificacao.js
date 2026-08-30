@@ -153,6 +153,10 @@
         if (elements.xpNext) elements.xpNext.textContent = `${xpNoNivel} / ${XP_POR_NIVEL} XP`;
         if (elements.completedTaskCount) elements.completedTaskCount.textContent = String(estado.tarefasConcluidas);
         if (elements.studyStreak) elements.studyStreak.textContent = textoDias(estado.streak);
+
+        // Avisa quem depender destes dados (ex.: conquistas.js) que
+        // XP/streak/tarefas podem ter mudado.
+        document.dispatchEvent(new CustomEvent("studymais:gamificacao-atualizada"));
     }
 
     function limparEstado() {
@@ -184,4 +188,11 @@
     }
 
     document.addEventListener("DOMContentLoaded", init);
+
+    /* ---------- API pública (usada por conquistas.js) ---------- */
+
+    window.StudyMaisGamificacao = {
+        getEstado: () => ({ ...estado }),
+        calcularNivel,
+    };
 })();

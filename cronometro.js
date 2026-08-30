@@ -81,6 +81,14 @@
         });
         salvarSessoes(sessoes);
         atualizarResumoHoje();
+
+        // Avisa quem depender do tempo estudado (ex.: conquistas.js)
+        // que uma nova sessão foi registrada.
+        document.dispatchEvent(new CustomEvent("studymais:sessao-registrada"));
+    }
+
+    function totalGeralMs() {
+        return carregarSessoes().reduce((soma, sessao) => soma + (sessao.duracaoMs || 0), 0);
     }
 
     /* ---------- Datas ---------- */
@@ -239,4 +247,11 @@
     }
 
     document.addEventListener("DOMContentLoaded", init);
+
+    /* ---------- API pública (usada por conquistas.js) ---------- */
+
+    window.StudyMaisCronometro = {
+        getTotalMinutosHoje: () => Math.round(totalHojeMs() / 60000),
+        getTotalMinutosGeral: () => Math.round(totalGeralMs() / 60000),
+    };
 })();
