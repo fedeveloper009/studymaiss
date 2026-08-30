@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>StudyMais</title>
+
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" href="favicon-192.png" type="image/png" sizes="192x192">
+    <link rel="icon" href="favicon-512.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<script>
+    (function () {
+        var salvo = localStorage.getItem("studymais-theme");
+        var tema = salvo || "dark"; // padrão: escuro
+        if (tema === "dark") {
+            document.body.classList.add("dark");
+        }
+    })();
+</script>
+
+<!-- ================= AUTENTICAÇÃO ================= -->
+
+<div id="authScreen" class="auth-screen">
+
+    <div class="auth-card modal-content">
+
+        <div class="logo">
+            <div class="logo-icon" aria-label="StudyMais">S<span>+</span></div>
+            <div>
+                <h2>Study<span>Mais</span></h2>
+                <p>seu espaço de estudos</p>
+            </div>
+        </div>
+
+        <span id="authModeLabel" class="small-title">ENTRAR</span>
+        <h2 id="authTitle">Bem-vinda de volta</h2>
+        <p id="authSubtitle" class="auth-subtitle">Entre para continuar seus estudos.</p>
+
+        <div id="authError" class="auth-error hidden"></div>
+
+        <form id="loginForm" class="auth-form">
+            <label>
+                Email
+                <input id="loginEmail" type="email" autocomplete="username" placeholder="voce@email.com">
+            </label>
+            <label>
+                Senha
+                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha">
+            </label>
+            <button id="loginSubmit" type="submit" class="save-task">Entrar</button>
+        </form>
+
+        <form id="registerForm" class="auth-form hidden">
+            <label>
+                Nome
+                <input id="registerName" type="text" autocomplete="name" placeholder="Seu nome" maxlength="60">
+            </label>
+            <label>
+                Email
+                <input id="registerEmail" type="email" autocomplete="username" placeholder="voce@email.com">
+            </label>
+            <label>
+                Senha
+                <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" minlength="6">
+            </label>
+            <button id="registerSubmit" type="submit" class="save-task">Criar conta</button>
+        </form>
+
+        <p class="auth-toggle">
+            <span id="authToggleText">Ainda não tem conta?</span>
+            <button id="authToggleButton" type="button" class="text-button">Criar conta</button>
+        </p>
+
+    </div>
+
+</div>
+
+
+<div id="appRoot" class="app hidden">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon" aria-label="StudyMais">S<span>+</span></div>
+
+            <div>
+                <h2>Study<span>Mais</span></h2>
+                <p>seu espaço de estudos</p>
+            </div>
+        </div>
+
+        <nav>
+
+            <button class="menu-item active" data-page="home">
+                🏠
+                <span>Início</span>
+            </button>
+
+            <button class="menu-item" data-page="subjects">
+                📚
+                <span>Matérias</span>
+            </button>
+
+            <button class="menu-item" data-page="schedule">
+                📅
+                <span>Cronograma</span>
+            </button>
+
+            <button class="menu-item" data-page="progress">
+                📊
+                <span>Progresso</span>
+            </button>
+
+            <button class="menu-item" data-page="achievements">
+                🏆
+                <span>Conquistas</span>
+            </button>
+
+            <button id="premiumButton" class="menu-item premium" data-page="premium">
+                💎
+                <span>Premium</span>
+                <small>PRO</small>
+            </button>
+
+            <div class="menu-title">
+                OUTROS
+            </div>
+
+            <button class="menu-item" data-page="account">
+                👤
+                <span>Meu perfil</span>
+            </button>
+
+            <button class="menu-item" data-page="settings">
+                ⚙️
+                <span>Configurações</span>
+            </button>
+
+        </nav>
+
+    </aside>
+
+
+    <!-- ================= CONTEÚDO ================= -->
+
+    <main class="main">
+
+        <!-- TOPO -->
+
+        <header class="topbar">
+
+            <div class="search">
+                🔎
+
+                <input
+                    type="text"
+                    placeholder="Pesquisar no StudyMais..."
+                >
+            </div>
+
+            <div class="user-area">
+
+                <button
+                    id="notificationButton"
+                    class="top-button"
+                    title="Notificações"
+                >
+                    🔔
+                </button>
+
+                <!-- BOTÃO DE TEMA SOMENTE COM EMOJI -->
+                <button
+                    id="themeButton"
+                    class="top-button theme-button"
+                    title="Alterar tema"
+                >
+                    🌙
+                </button>
+
+                <button
+                    id="logoutButton"
+                    class="top-button"
+                    title="Sair"
+                >
+                    🚪
+                </button>
+
+                <div id="topbarAvatar" class="avatar">
+                    M
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ================= PÁGINA ================= -->
+
+        <section id="schedulePage" class="content app-page" data-page="schedule">
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="small-title">
+                        STUDYMAIS
+                    </span>
+
+                    <h1>
+                        Meu cronograma
+                    </h1>
+
+                    <p>
+                        Organize seus estudos e acompanhe suas tarefas.
+                    </p>
+
+                </div>
+
+                <button
+                    id="todayButton"
+                    class="today-button"
+                >
+                    Hoje
+                </button>
+
+            </div>
+
+
+            <!-- ================= CALENDÁRIO ================= -->
+
+            <div class="calendar-card">
+
+                <div class="calendar-header">
+
+                    <button
+                        id="previousMonth"
+                        class="calendar-arrow"
+                    >
+                        ‹
+                    </button>
+
+                    <h2 id="monthTitle">
+                        Carregando...
+                    </h2>
+
+                    <button
+                        id="nextMonth"
+                        class="calendar-arrow"
+                    >
+                        ›
+                    </button>
+
+                </div>
+
+
+                <div class="weekdays">
+
+                    <div>SEG</div>
+                    <div>TER</div>
+                    <div>QUA</div>
+                    <div>QUI</div>
+                    <div>SEX</div>
+                    <div>SÁB</div>
+                    <div>DOM</div>
+
+                </div>
+
+
+                <div
+                    id="calendar"
+                    class="calendar"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- ================= TAREFAS ================= -->
+
+            <div class="tasks-section">
+
+                <div class="tasks-header">
+
+                    <div>
+
+                        <span class="small-title">
+                            SEU DIA
+                        </span>
+
+                        <h2 id="selectedDate">
+                            Selecione um dia
+                        </h2>
+
+                    </div>
+
+                    <button
+                        id="addTaskButton"
+                        class="add-task"
+                    >
+                        + Nova tarefa
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="tasks"
+                    class="tasks"
+                >
+                </div>
+
+            </div>
+
+
+            <!-- ================= PREMIUM ================= -->
+
+            <section class="premium-section" aria-labelledby="premiumTitle">
+
+                <div class="premium-card">
+
+                    <div class="premium-copy">
+                        <span class="premium-label">💎 STUDYMAIS PREMIUM</span>
+
+                        <h2 id="premiumTitle">Seu cronograma, do seu jeito.</h2>
+
+                        <p>
+                            Crie uma rotina personalizada com as matérias que mais
+                            importam para o seu objetivo.
+                        </p>
+
+                        <div class="premium-features">
+                            <span>✓ Plano semanal</span>
+                            <span>✓ Prioridades por matéria</span>
+                            <span>✓ Ajuste ao seu tempo</span>
+                        </div>
+
+                        <button id="openPremium" class="premium-action">
+                            Criar meu cronograma
+                        </button>
+                    </div>
+
+                    <div class="premium-illustration" aria-hidden="true">
+                        <div class="plan-line long"></div>
+                        <div class="plan-line"></div>
+                        <div class="plan-line short"></div>
+                        <span>✨</span>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= CRONÔMETRO ================= -->
+
+            <div class="study-timer-section">
+
+                <div class="timer-card">
+
+                    <div class="timer-icon">
+                        ⏱️
+                    </div>
+
+                    <div class="timer-info">
+
+                        <span class="small-title">
+                            FOCO NOS ESTUDOS
+                        </span>
+
+                        <h2>
+                            Cronômetro de estudo
+                        </h2>
+
+                        <p>
+                            Registre seu tempo de estudo e mantenha o foco.
+                        </p>
+
+                    </div>
+
+
+                    <div class="timer">
+
+                        <div
+                            id="timerDisplay"
+                            class="timer-display"
+                        >
+                            00:00:00
+                        </div>
+
+
+                        <div class="timer-subject">
+
+                            <select id="timerSubject">
+
+                                <option value="Geral">
+                                    📚 Estudo geral
+                                </option>
+
+                                <option value="Matemática">
+                                    📐 Matemática
+                                </option>
+
+                                <option value="Português">
+                                    📖 Português
+                                </option>
+
+                                <option value="Química">
+                                    🧪 Química
+                                </option>
+
+                                <option value="Física">
+                                    ⚡ Física
+                                </option>
+
+                                <option value="Biologia">
+                                    🧬 Biologia
+                                </option>
+
+                                <option value="História">
+                                    📜 História
+                                </option>
+
+                                <option value="Geografia">
+                                    🌎 Geografia
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="timer-controls">
+
+                            <button
+                                id="startTimer"
+                                class="timer-start"
+                            >
+                                ▶ Iniciar
+                            </button>
+
+                            <button
+                                id="pauseTimer"
+                                class="timer-pause"
+                                disabled
+                            >
+                                ⏸ Pausar
+                            </button>
+
+                            <button
+                                id="resetTimer"
+                                class="timer-reset"
+                            >
+                                ↻ Zerar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= INÍCIO ================= -->
+
+        <section id="homePage" class="content app-page active" data-page="home">
+
+            <div class="page-header home-header">
+                <div>
+                    <span class="small-title">STUDYMAIS</span>
+                    <h1 id="homeGreeting">Olá!</h1>
+                    <p>Pronta para continuar seus estudos?</p>
+                </div>
+                <button class="start-study-button" data-go-to="schedule">▶ Começar a estudar</button>
+            </div>
+
+            <div class="home-overview">
+                <div class="daily-focus-card">
+                    <span>SEU FOCO DE HOJE</span>
+                    <h2>Um pouquinho todos os dias faz uma grande diferença.</h2>
+                    <p id="focusMessage">Comece uma sessão e chegue mais perto da sua meta.</p>
+                    <div id="focusTasks" class="focus-tasks"></div>
+                    <button data-go-to="schedule">Iniciar sessão →</button>
+                </div>
+
+                <div class="home-mini-stats">
+                    <article><div>◷</div><small>Hoje</small><strong id="todayHours">0h 0min</strong><p id="dailyGoalHint">Meta: 2h</p></article>
+                    <article><div>✓</div><small>Concluídas</small><strong id="todayTaskCount">0/0</strong><p id="todayTaskHint">Organize o seu dia</p></article>
+                    <article><div>♨</div><small>Sequência</small><strong id="homeStreak">0 dias</strong><p>Continue assim</p></article>
+                    <article><div>★</div><small>XP total</small><strong id="homeXp">0 XP</strong><p id="homeLevel">Nível 1</p></article>
+                </div>
+            </div>
+
+            <div class="home-subjects-header">
+                <h2>Suas matérias</h2>
+                <button class="text-button" data-go-to="subjects">Ver todas →</button>
+            </div>
+            <div id="homeSubjectsList" class="home-subjects"></div>
+
+            <div class="dashboard-grid home-tasks-grid">
+                <div class="panel-card">
+                    <div class="panel-heading"><div><span class="small-title">SEU DIA</span><h2>Tarefas de hoje</h2></div><button class="text-button" data-go-to="schedule">Ver todas</button></div>
+                    <div id="todayTasksList" class="today-tasks"></div>
+                </div>
+                <div class="panel-card goal-card">
+                    <span class="small-title">META DIÁRIA</span>
+                    <h2 id="goalTitle">2 horas de foco</h2>
+                    <div class="goal-ring" id="goalRing"><strong id="goalPercent">0%</strong><span>concluído</span></div>
+                    <p id="goalMessage">Inicie o cronômetro para começar.</p>
+                    <button class="premium-action" data-go-to="schedule">Abrir cronômetro</button>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ================= MATÉRIAS ================= -->
+
+        <section id="subjectsPage" class="content app-page" data-page="subjects">
+            <div class="page-header"><div><span class="small-title">ORGANIZAÇÃO</span><h1>Minhas matérias</h1><p>Adicione as matérias que fazem parte da sua rotina.</p></div><button id="addSubjectButton" class="add-task">+ Nova matéria</button></div>
+            <div id="subjectsList" class="subjects-grid"></div>
+        </section>
+
+
+        <!-- ================= PROGRESSO ================= -->
+
+        <section id="progressPage" class="content app-page" data-page="progress">
+            <div class="page-header"><div><span class="small-title">EVOLUÇÃO</span><h1>Meu progresso</h1><p>Seu avanço é construído pelas pequenas sessões de estudo.</p></div></div>
+            <div class="progress-hero"><div><span>⚡</span><small>XP TOTAL</small><h2 id="progressXp">0 XP</h2><p id="progressLevel">Nível 1</p></div><div class="xp-track"><div id="xpBar"></div></div><strong id="xpNext">0 / 100 XP</strong></div>
+            <div class="dashboard-stats"><div class="stat-card"><span>✓</span><small>TAREFAS CONCLUÍDAS</small><strong id="completedTaskCount">0</strong><p>20 XP por tarefa</p></div><div class="stat-card blue"><span>⏱️</span><small>TEMPO ESTUDADO</small><strong id="totalStudyTime">0h 0min</strong><p>2 XP por minuto</p></div><div class="stat-card pink"><span>🎯</span><small>SEQUÊNCIA</small><strong id="studyStreak">0 dias</strong><p>Continue assim!</p></div></div>
+        </section>
+
+
+        <!-- ================= CONQUISTAS ================= -->
+
+        <section id="achievementsPage" class="content app-page" data-page="achievements">
+            <div class="page-header"><div><span class="small-title">SUAS VITÓRIAS</span><h1>Conquistas</h1><p>Todo esforço merece ser celebrado.</p></div></div>
+            <div id="achievementsList" class="achievements-grid"></div>
+        </section>
+
+
+        <!-- ================= CONTA ================= -->
+
+        <section id="accountPage" class="content app-page" data-page="account">
+            <div class="page-header"><div><span class="small-title">SUA CONTA</span><h1>Meu perfil</h1><p>Seus dados de conta ficam salvos no StudyMais.</p></div></div>
+            <div class="account-card"><div id="profileAvatar" class="profile-avatar">M</div><div><span class="small-title">ESTUDANTE STUDYMAIS</span><h2 id="profileName">Minha conta</h2><p id="profileSummary">Vamos estudar?</p></div></div>
+            <div class="settings-card"><h2>Dados da conta</h2><label>Nome<input id="accountName" type="text" maxlength="60" placeholder="Seu nome"></label><label>Email<input id="accountEmail" type="email" placeholder="seu@email.com"></label><label>Senha<input id="accountPassword" type="password" placeholder="Confirme com sua senha atual" autocomplete="current-password"></label><p class="field-hint">Informe sua senha atual para confirmar as alterações (ou digite uma nova senha para trocá-la).</p><button id="saveAccount" class="save-task">Salvar perfil</button></div>
+            <div class="settings-card"><h2>Seu objetivo</h2><label>O que você está estudando para alcançar?<input id="accountGoal" type="text" maxlength="60" placeholder="Ex: Passar no ENEM"></label><button id="saveGoal" class="save-task">Salvar objetivo</button></div>
+        </section>
+
+
+        <!-- ================= CONFIGURAÇÕES ================= -->
+
+        <section id="settingsPage" class="content app-page" data-page="settings">
+            <div class="page-header"><div><span class="small-title">PREFERÊNCIAS</span><h1>Configurações</h1><p>Deixe o StudyMais do jeito que funciona para você.</p></div></div>
+            <div class="settings-card"><h2>Rotina de estudos</h2><label>Meta de horas por dia<select id="dailyStudyGoal"><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="4">4 horas</option><option value="5">5 horas</option></select></label><label class="toggle-row"><span>Mostrar lembrete de estudos</span><input id="studyReminder" type="checkbox"><i></i></label><button id="saveSettings" class="save-task">Salvar configurações</button></div>
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- ================= MODAL MATÉRIA ================= -->
+
+<div id="subjectModal" class="modal hidden">
+    <div class="modal-content">
+        <button id="closeSubjectModal" class="close-modal" aria-label="Fechar">×</button>
+        <span class="small-title">NOVA MATÉRIA</span>
+        <h2>Adicionar matéria</h2>
+        <label>Nome da matéria<input id="subjectName" type="text" maxlength="30" placeholder="Ex: Literatura"></label>
+        <label>Ícone<select id="subjectEmoji"><option>📚</option><option>🧮</option><option>🧪</option><option>🌎</option><option>📖</option><option>🎨</option></select></label>
+        <button id="saveSubject" class="save-task">Adicionar matéria</button>
+    </div>
+</div>
+
+
+<!-- ================= MODAL PREMIUM ================= -->
+
+<div id="premiumModal" class="modal hidden">
+
+    <div class="modal-content premium-modal-content">
+
+        <button id="closePremiumModal" class="close-modal" aria-label="Fechar">
+            ×
+        </button>
+
+        <span class="small-title">STUDYMAIS PREMIUM</span>
+
+        <h2>Vamos montar seu cronograma</h2>
+
+        <p class="modal-description">
+            Escolha suas prioridades. Vamos criar uma primeira semana de tarefas
+            que você poderá ajustar quando quiser.
+        </p>
+
+        <label>
+            Seu objetivo principal
+            <select id="planGoal">
+                <option value="Vestibular">Vestibular</option>
+                <option value="ENEM">ENEM</option>
+                <option value="Prova">Prova</option>
+                <option value="Revisão">Revisão geral</option>
+            </select>
+        </label>
+
+        <label>
+            Tempo disponível por dia
+            <select id="planDuration">
+                <option value="1">1 hora</option>
+                <option value="2" selected>2 horas</option>
+                <option value="3">3 horas</option>
+                <option value="4">4 horas ou mais</option>
+            </select>
+        </label>
+
+        <label>
+            Matéria para priorizar
+            <select id="planSubject">
+                <option>Matemática</option>
+                <option>Português</option>
+                <option>Química</option>
+                <option>Física</option>
+                <option>Biologia</option>
+                <option>História</option>
+                <option>Geografia</option>
+            </select>
+        </label>
+
+        <button id="generatePlan" class="save-task">
+            Gerar meu cronograma
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================= MODAL ================= -->
+
+<div
+    id="taskModal"
+    class="modal hidden"
+>
+
+    <div class="modal-content">
+
+        <button
+            id="closeModal"
+            class="close-modal"
+        >
+            ×
+        </button>
+
+        <span class="small-title">
+            NOVA TAREFA
+        </span>
+
+        <h2>
+            Adicionar tarefa
+        </h2>
+
+
+        <label>
+
+            Título
+
+            <input
+                id="taskTitle"
+                type="text"
+                placeholder="Ex: Fazer exercícios de matemática"
+            >
+
+        </label>
+
+
+        <label>
+
+            Matéria
+
+            <select id="taskSubject">
+
+                <option>Matemática</option>
+                <option>Português</option>
+                <option>Química</option>
+                <option>Física</option>
+                <option>Biologia</option>
+                <option>História</option>
+                <option>Geografia</option>
+
+            </select>
+
+        </label>
+
+
+        <label>
+
+            Horário
+
+            <input
+                id="taskTime"
+                type="time"
+            >
+
+        </label>
+
+
+        <label>
+
+            Prioridade
+
+            <select id="taskPriority">
+
+                <option value="baixa">
+                    Baixa
+                </option>
+
+                <option
+                    value="media"
+                    selected
+                >
+                    Média
+                </option>
+
+                <option value="alta">
+                    Alta
+                </option>
+
+            </select>
+
+        </label>
+
+
+        <button
+            id="saveTask"
+            class="save-task"
+        >
+            Criar tarefa
+        </button>
+
+    </div>
+
+</div>
+
+
+<script src="services/api.js"></script>
+<script src="auth.js"></script>
+<script src="calendario.js"></script>
+<script src="dados.js"></script>
+<script src="perfil.js"></script>
+<script src="gamificacao.js"></script>
+<script src="cronometro.js"></script>
+
+</body>
+</html>
