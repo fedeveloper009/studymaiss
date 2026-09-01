@@ -726,4 +726,14 @@
     }
 
     document.addEventListener("DOMContentLoaded", init);
+
+    /* ---------- Exposição global ----------
+       Usado por gamificacao.js: a quantidade de tarefas concluídas
+       não precisa (nem deve) ser guardada à parte — a própria API
+       de tarefas já é a fonte da verdade (campo "status"). */
+    window.StudyMaisDados = {
+        contarTarefasConcluidas() {
+            return tarefas.filter((t) => t.status === "CONCLUIDA").length;
+        },
+    };
 })();

@@ -101,8 +101,14 @@
         elements.saveAccount.textContent = "Salvando...";
 
         try {
+            // Os campos xp/diasDeSequencia/tempoEstudado/materiaEstudada/
+            // conquistas não são enviados aqui: a API mantém os valores
+            // já salvos quando eles vêm nulos no corpo da requisição.
             const atualizado = await api.usuarioService.atualizar(user.id, { nome, email, senha });
             window.StudyMaisAuth.setCurrentUser(atualizado || { ...user, nome, email });
+            // A senha enviada acima passa a ser a senha atual da conta —
+            // mantém a cópia em memória sincronizada (ver auth.js).
+            window.StudyMaisAuth.setSessionPassword(senha);
             preencherPerfil();
             mostrarSucesso(elements.saveAccount, textoOriginal);
         } catch (error) {

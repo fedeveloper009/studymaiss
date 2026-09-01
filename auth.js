@@ -5,12 +5,30 @@
    Controla a tela de login/cadastro, a sessão do
    usuário (token + dados básicos) e o logout.
    Depende de services/api.js (deve ser carregado antes).
+
+   ---------------------------------------------------------
+   Também centraliza a sincronização de progresso (xp,
+   sequência, tempo estudado, matéria estudada e conquistas)
+   com a API, através de atualizarProgresso(). Esses dados
+   agora vivem só no model Usuario do back-end — nada mais
+   fica salvo no localStorage.
+
+   IMPORTANTE: o endpoint PUT /usuarios/{id} exige "senha"
+   em todo envio (mesmo para atualizar só o xp, por exemplo).
+   Como o front nunca guarda a senha do usuário em disco (só
+   o token JWT), ela fica em memória (sessionPassword) durante
+   a sessão atual, obtida no login/cadastro. Se a página for
+   recarregada com um token ainda válido, essa senha em
+   memória se perde e a sincronização automática de progresso
+   fica pausada até o próximo login (a navegação continua
+   funcionando normalmente, só o envio para a API é adiado).
+   O ideal, no back-end, seria tornar "senha" opcional no
+   UsuarioRequestDTO/UsuarioService (só recodificar quando
+   vier preenchida), o que eliminaria essa limitação.
 ========================================== */
 
 (function () {
     "use strict";
-
-    const USER_STORAGE_KEY = "studymais_user";
 
     const api = window.StudyMaisAPI;
 
@@ -18,6 +36,9 @@
 
     let currentUser = null;
     let mode = "login"; // "login" | "register"
+
+    // Só em memória — nunca é persistida (ver nota acima).
+    let sessionPassword = null;
 
     function cacheElements() {
         elements.authScreen = document.getElementById("authScreen");
@@ -44,26 +65,6 @@
 
         elements.logoutButton = document.getElementById("logoutButton");
         elements.topbarAvatar = document.getElementById("topbarAvatar");
-    }
-
-    /* ---------- Persistência local do usuário ---------- */
-
-    function getStoredUser() {
-        const raw = localStorage.getItem(USER_STORAGE_KEY);
-        if (!raw) return null;
-        try {
-            return JSON.parse(raw);
-        } catch (error) {
-            return null;
-        }
-    }
-
-    function storeUser(user) {
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    }
-
-    function clearStoredUser() {
-        localStorage.removeItem(USER_STORAGE_KEY);
     }
 
     /* ---------- UI: telas ---------- */
@@ -130,7 +131,6 @@
             throw new api.ApiError("Não foi possível carregar os dados do usuário.", 500);
         }
         currentUser = usuario;
-        storeUser(usuario);
         return usuario;
     }
 
@@ -145,8 +145,56 @@
     function setCurrentUser(user) {
         if (!user) return;
         currentUser = user;
-        storeUser(user);
         updateTopbarUser();
+    }
+
+    /**
+     * Envia ao back-end os campos de progresso do usuário (xp,
+     * diasDeSequencia, tempoEstudado, materiaEstudada, conquistas),
+     * combinando o que já está salvo com o que foi passado em
+     * `camposParciais`. Atualiza o usuário em memória/cache local
+     * (apenas os dados básicos de sessão, iguais aos já guardados
+     * pelo login) e avisa outros módulos via "studymais:usuario-atualizado".
+     *
+     * Retorna o usuário atualizado, ou null se não foi possível
+     * sincronizar (sem sessão, ou sem a senha em memória — ver nota
+     * no topo do arquivo).
+     */
+    async function atualizarProgresso(camposParciais) {
+        if (!currentUser) return null;
+
+        if (!sessionPassword) {
+            console.warn(
+                "[StudyMais] Progresso não sincronizado com o servidor: faça login " +
+                "novamente nesta aba para retomar a sincronização (a API exige a " +
+                "senha em toda atualização de usuário)."
+            );
+            return null;
+        }
+
+        const payload = {
+            nome: currentUser.nome,
+            email: currentUser.email,
+            senha: sessionPassword,
+            xp: currentUser.xp,
+            diasDeSequencia: currentUser.diasDeSequencia,
+            tempoEstudado: currentUser.tempoEstudado,
+            materiaEstudada: currentUser.materiaEstudada,
+            conquistas: currentUser.conquistas,
+            ...camposParciais,
+        };
+
+        try {
+            const atualizado = await api.usuarioService.atualizar(currentUser.id, payload);
+            setCurrentUser(atualizado || { ...currentUser, ...camposParciais });
+            document.dispatchEvent(
+                new CustomEvent("studymais:usuario-atualizado", { detail: { user: currentUser } })
+            );
+            return currentUser;
+        } catch (error) {
+            console.error("[StudyMais] Falha ao sincronizar progresso com o servidor:", error);
+            return null;
+        }
     }
 
     /* ---------- Handlers ---------- */
@@ -169,10 +217,12 @@
             const resposta = await api.authService.login(email, senha);
             api.setToken(resposta.token);
             await loadCurrentUser();
+            sessionPassword = senha;
             elements.loginForm.reset();
             showApp();
         } catch (error) {
             api.clearToken();
+            sessionPassword = null;
             showError(error.message || "Não foi possível entrar.");
         } finally {
             setButtonLoading(elements.loginSubmit, false, "Entrando...", "Entrar");
@@ -205,6 +255,7 @@
             const resposta = await api.authService.login(email, senha);
             api.setToken(resposta.token);
             await loadCurrentUser();
+            sessionPassword = senha;
             elements.registerForm.reset();
             showApp();
         } catch (error) {
@@ -216,8 +267,8 @@
 
     function handleLogout() {
         api.clearToken();
-        clearStoredUser();
         currentUser = null;
+        sessionPassword = null;
         setMode("login");
         showAuthScreen();
         // Avisa dados.js para limpar o estado (matérias/tarefas) em memória.
@@ -244,7 +295,7 @@
         // api.js chama este hook para forçar o logout.
         api.onUnauthorized = function () {
             currentUser = null;
-            clearStoredUser();
+            sessionPassword = null;
             api.clearToken();
             setMode("login");
             showAuthScreen();
@@ -264,14 +315,25 @@
             showApp();
         } catch (error) {
             api.clearToken();
-            clearStoredUser();
             showAuthScreen();
         }
+    }
+
+    /**
+     * Usado por perfil.js após uma troca de senha bem-sucedida, para
+     * manter a senha em memória (sessionPassword) igual à atual —
+     * senão as próximas chamadas a atualizarProgresso() falhariam
+     * silenciosamente (a API rejeita a senha antiga).
+     */
+    function setSessionPassword(senha) {
+        sessionPassword = senha || sessionPassword;
     }
 
     window.StudyMaisAuth = {
         getCurrentUser,
         setCurrentUser,
+        setSessionPassword,
+        atualizarProgresso,
         logout: handleLogout,
     };
 

@@ -3,14 +3,31 @@
    cronometro.js
 
    Cronômetro de estudo (Iniciar/Pausar/Zerar).
-   A API não tem conceito de "sessão de estudo", então,
-   seguindo o mesmo padrão de gamificacao.js e perfil.js,
-   o histórico de sessões fica salvo só no localStorage
-   (por usuário) e alimenta o resumo "Hoje" e a meta diária
-   da Home.
 
-   Depende de auth.js (usuário atual) e dos elementos do
-   cronômetro/Home já presentes no index.html.
+   O tempo estudado (em segundos) e a última matéria estudada
+   agora são campos reais do usuário na API (tempoEstudado e
+   materiaEstudada) — ao encerrar uma sessão ("Zerar"), a
+   duração é somada ao total do usuário e enviada com
+   window.StudyMaisAuth.atualizarProgresso() (ver auth.js).
+   Nada disso fica mais salvo no localStorage.
+
+   ---------------------------------------------------------
+   OBS. sobre o resumo "Hoje" e a meta diária da Home:
+
+   O model Usuario guarda só um total acumulado de todo o
+   histórico (tempoEstudado), sem quebrar por dia. Sem um
+   campo de data no back-end, não dá para saber quanto desse
+   total é "de hoje". Por isso, o resumo "Hoje"/meta diária
+   passou a refletir só o tempo estudado NESTA sessão do
+   navegador (uma variável em memória, não salva em lugar
+   nenhum, zerada a cada vez que a página é recarregada) — não
+   é mais um total real do dia calendário, e sim "desde que
+   você abriu o app agora". Já o total de "TEMPO ESTUDADO" da
+   página Meu progresso continua exato, pois vem direto do
+   tempoEstudado acumulado do usuário na API.
+
+   Depende de auth.js (usuário atual + sincronização) e dos
+   elementos do cronômetro/Home já presentes no index.html.
 ========================================== */
 
 (function () {
@@ -28,6 +45,11 @@
         intervalId: null,
     };
 
+    // Tempo estudado só nesta sessão do navegador (ver observação acima).
+    // Não é persistido em lugar nenhum — existe apenas para alimentar o
+    // resumo "Hoje" da Home enquanto o app está aberto.
+    let estudadoNestaSessaoMs = 0;
+
     /* ---------- Elementos ---------- */
 
     function cacheElements() {
@@ -44,61 +66,28 @@
         elements.goalMessage = document.getElementById("goalMessage");
     }
 
-    /* ---------- Persistência local (por usuário) ---------- */
+    /* ---------- Sincronização com a API ---------- */
 
-    function chaveStorage() {
-        const user = window.StudyMaisAuth && window.StudyMaisAuth.getCurrentUser();
-        const uid = user && user.id != null ? user.id : "demo";
-        return `studymais_cronometro_${uid}`;
+    function usuarioAtual() {
+        return (window.StudyMaisAuth && window.StudyMaisAuth.getCurrentUser()) || {};
     }
 
-    function carregarSessoes() {
-        try {
-            const salvo = JSON.parse(localStorage.getItem(chaveStorage()));
-            return Array.isArray(salvo) ? salvo : [];
-        } catch (error) {
-            return [];
-        }
-    }
-
-    function salvarSessoes(sessoes) {
-        localStorage.setItem(chaveStorage(), JSON.stringify(sessoes));
-    }
-
-    function registrarSessao(duracaoMs) {
+    async function registrarSessao(duracaoMs) {
         const select = elements.timerSubject;
-        const materiaId = select ? select.value : "";
         const opcaoSelecionada = select && select.selectedOptions ? select.selectedOptions[0] : null;
         const materiaNome = opcaoSelecionada ? opcaoSelecionada.textContent.trim() : "📚 Estudo geral";
 
-        const sessoes = carregarSessoes();
-        sessoes.push({
-            data: hojeISO(),
-            materiaId: materiaId || null,
-            materiaNome,
-            duracaoMs,
-            criadoEm: new Date().toISOString(),
-        });
-        salvarSessoes(sessoes);
+        const duracaoSegundos = Math.round(duracaoMs / 1000);
+        const usuario = usuarioAtual();
+        const novoTempoEstudado = (usuario.tempoEstudado || 0) + duracaoSegundos;
+
+        estudadoNestaSessaoMs += duracaoMs;
         atualizarResumoHoje();
 
-        // Avisa quem depender do tempo estudado (ex.: conquistas.js)
-        // que uma nova sessão foi registrada.
-        document.dispatchEvent(new CustomEvent("studymais:sessao-registrada"));
-    }
-
-    function totalGeralMs() {
-        return carregarSessoes().reduce((soma, sessao) => soma + (sessao.duracaoMs || 0), 0);
-    }
-
-    /* ---------- Datas ---------- */
-
-    function hojeISO() {
-        const agora = new Date();
-        const ano = agora.getFullYear();
-        const mes = String(agora.getMonth() + 1).padStart(2, "0");
-        const dia = String(agora.getDate()).padStart(2, "0");
-        return `${ano}-${mes}-${dia}`;
+        await window.StudyMaisAuth.atualizarProgresso({
+            tempoEstudado: novoTempoEstudado,
+            materiaEstudada: materiaNome,
+        });
     }
 
     /* ---------- Meta diária (só local, configurada em Configurações) ---------- */
@@ -113,13 +102,6 @@
         }
     }
 
-    function totalHojeMs() {
-        const hojeStr = hojeISO();
-        return carregarSessoes()
-            .filter((sessao) => sessao.data === hojeStr)
-            .reduce((soma, sessao) => soma + (sessao.duracaoMs || 0), 0);
-    }
-
     function formatarHorasMinutos(ms) {
         const totalMinutos = Math.round(ms / 60000);
         const horas = Math.floor(totalMinutos / 60);
@@ -128,7 +110,7 @@
     }
 
     function atualizarResumoHoje() {
-        const totalMs = totalHojeMs();
+        const totalMs = estudadoNestaSessaoMs;
         const metaHoras = lerMetaHoras();
         const metaMs = metaHoras * 3600000;
         const percentual = metaMs > 0 ? Math.min(100, Math.round((totalMs / metaMs) * 100)) : 0;
@@ -215,7 +197,8 @@
     }
 
     // "Zerar" também é o momento em que a sessão é encerrada: se havia
-    // tempo estudado, ele é somado à meta diária antes do display voltar a 00:00:00.
+    // tempo estudado, ele é somado ao total do usuário (API) antes do
+    // display voltar a 00:00:00.
     function zerarTimer() {
         const duracaoMs = tempoAtualMs();
         pararSemSalvar();
@@ -241,17 +224,16 @@
         atualizarBotoes();
         atualizarDisplay();
 
-        document.addEventListener("studymais:ready", atualizarResumoHoje);
+        document.addEventListener("studymais:ready", () => {
+            estudadoNestaSessaoMs = 0;
+            atualizarResumoHoje();
+        });
         document.addEventListener("studymais:meta-atualizada", atualizarResumoHoje);
-        document.addEventListener("studymais:logout", pararSemSalvar);
+        document.addEventListener("studymais:logout", () => {
+            estudadoNestaSessaoMs = 0;
+            pararSemSalvar();
+        });
     }
 
     document.addEventListener("DOMContentLoaded", init);
-
-    /* ---------- API pública (usada por conquistas.js) ---------- */
-
-    window.StudyMaisCronometro = {
-        getTotalMinutosHoje: () => Math.round(totalHojeMs() / 60000),
-        getTotalMinutosGeral: () => Math.round(totalGeralMs() / 60000),
-    };
 })();
