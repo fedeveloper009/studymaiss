@@ -215,6 +215,26 @@
         },
     };
 
+    /* ---------- Serviço: Plataformas ---------- */
+
+    const plataformaService = {
+        listar() {
+            return request("/plataformas", { method: "GET" });
+        },
+
+        criar(plataforma) {
+            return request("/plataformas", { method: "POST", body: plataforma });
+        },
+
+        atualizar(id, plataforma) {
+            return request(`/plataformas/${id}`, { method: "PUT", body: plataforma });
+        },
+
+        deletar(id) {
+            return request(`/plataformas/${id}`, { method: "DELETE" });
+        },
+    };
+
     /* ---------- Exposição global ---------- */
 
     window.StudyMaisAPI = {
@@ -228,5 +248,6 @@
         usuarioService,
         materiaService,
         tarefaService,
+        plataformaService,
     };
 })();

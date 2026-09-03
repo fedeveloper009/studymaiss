@@ -112,6 +112,11 @@
                 <span>Matérias</span>
             </button>
 
+            <button class="menu-item" data-page="platforms">
+                🖥️
+                <span>Plataformas</span>
+            </button>
+
             <button class="menu-item" data-page="schedule">
                 📅
                 <span>Cronograma</span>
@@ -536,6 +541,14 @@
         </section>
 
 
+        <!-- ================= PLATAFORMAS ================= -->
+
+        <section id="platformsPage" class="content app-page" data-page="platforms">
+            <div class="page-header"><div><span class="small-title">ORGANIZAÇÃO</span><h1>Minhas plataformas</h1><p>Cadastre as plataformas que você usa para estudar.</p></div><button id="addPlatformButton" class="add-task">+ Nova plataforma</button></div>
+            <div id="platformsList" class="subjects-grid"></div>
+        </section>
+
+
         <!-- ================= PROGRESSO ================= -->
 
         <section id="progressPage" class="content app-page" data-page="progress">
@@ -585,6 +598,21 @@
         <label>Nome da matéria<input id="subjectName" type="text" maxlength="30" placeholder="Ex: Literatura"></label>
         <label>Ícone<select id="subjectEmoji"><option>📚</option><option>🧮</option><option>🧪</option><option>🌎</option><option>📖</option><option>🎨</option></select></label>
         <button id="saveSubject" class="save-task">Adicionar matéria</button>
+    </div>
+</div>
+
+
+<!-- ================= MODAL PLATAFORMA ================= -->
+
+<div id="platformModal" class="modal hidden">
+    <div class="modal-content">
+        <button id="closePlatformModal" class="close-modal" aria-label="Fechar">×</button>
+        <span class="small-title">NOVA PLATAFORMA</span>
+        <h2>Adicionar plataforma</h2>
+        <label>Nome da plataforma<input id="platformName" type="text" maxlength="40" placeholder="Ex: Duolingo"></label>
+        <label>Descrição<input id="platformDescription" type="text" maxlength="120" placeholder="Ex: Prática diária de idiomas"></label>
+        <label>Link (URL)<input id="platformUrl" type="url" placeholder="https://..."></label>
+        <button id="savePlatform" class="save-task">Adicionar plataforma</button>
     </div>
 </div>
 

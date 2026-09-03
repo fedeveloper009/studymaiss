@@ -17,6 +17,9 @@
      status:     "PENDENTE" | "CONCLUIDA"
      prioridade: "BAIXA" | "MEDIA" | "ALTA"
 
+   Plataforma (POST/GET /api/plataformas)
+     { id, nomePlataforma, descricao, url, usuarioId }
+
    ---------------------------------------------------------
    ATENÇÃO / PREMISSAS ASSUMIDAS (a API não tem esses campos,
    então foram resolvidos no front-end — ajuste se necessário):
@@ -43,6 +46,7 @@
 
     let materias = [];
     let tarefas = [];
+    let plataformas = [];
 
     const hoje = new Date();
     let viewYear = hoje.getFullYear();
@@ -194,6 +198,15 @@
         elements.subjectEmoji = document.getElementById("subjectEmoji");
         elements.saveSubject = document.getElementById("saveSubject");
 
+        elements.platformsList = document.getElementById("platformsList");
+        elements.addPlatformButton = document.getElementById("addPlatformButton");
+        elements.platformModal = document.getElementById("platformModal");
+        elements.closePlatformModal = document.getElementById("closePlatformModal");
+        elements.platformName = document.getElementById("platformName");
+        elements.platformDescription = document.getElementById("platformDescription");
+        elements.platformUrl = document.getElementById("platformUrl");
+        elements.savePlatform = document.getElementById("savePlatform");
+
         elements.planSubject = document.getElementById("planSubject");
         elements.timerSubject = document.getElementById("timerSubject");
     }
@@ -202,16 +215,19 @@
 
     async function carregarDados() {
         try {
-            const [listaMaterias, listaTarefas] = await Promise.all([
+            const [listaMaterias, listaTarefas, listaPlataformas] = await Promise.all([
                 api.materiaService.listar(),
                 api.tarefaService.listar(),
+                api.plataformaService.listar(),
             ]);
             materias = Array.isArray(listaMaterias) ? listaMaterias : [];
             tarefas = Array.isArray(listaTarefas) ? listaTarefas : [];
+            plataformas = Array.isArray(listaPlataformas) ? listaPlataformas : [];
         } catch (error) {
             materias = [];
             tarefas = [];
-            console.error("Não foi possível carregar matérias/tarefas:", error);
+            plataformas = [];
+            console.error("Não foi possível carregar matérias/tarefas/plataformas:", error);
         }
         renderTudo();
     }
@@ -219,6 +235,7 @@
     function limparEstado() {
         materias = [];
         tarefas = [];
+        plataformas = [];
         selectedDate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
         viewYear = hoje.getFullYear();
         viewMonth = hoje.getMonth();
@@ -297,6 +314,39 @@
 
         elements.subjectsList.querySelectorAll("[data-delete-subject]").forEach((btn) => {
             btn.addEventListener("click", () => excluirMateria(btn.dataset.deleteSubject));
+        });
+    }
+
+    /* ---------- Render: página Plataformas ---------- */
+
+    function renderPlatformsPage() {
+        if (!elements.platformsList) return;
+
+        if (plataformas.length === 0) {
+            elements.platformsList.innerHTML =
+                '<p class="no-tasks">Você ainda não cadastrou nenhuma plataforma.</p>';
+            return;
+        }
+
+        elements.platformsList.innerHTML = plataformas
+            .map((plataforma) => {
+                const linkHtml = plataforma.url
+                    ? `<a href="${escapeHtml(plataforma.url)}" target="_blank" rel="noopener noreferrer" class="text-button">Abrir ↗</a>`
+                    : "";
+                return `
+                    <div class="subject-card" data-id="${plataforma.id}">
+                        <div class="subject-icon">🖥️</div>
+                        <h2>${escapeHtml(plataforma.nomePlataforma)}</h2>
+                        <p>${escapeHtml(plataforma.descricao) || "Sem descrição."}</p>
+                        ${linkHtml}
+                        <button type="button" class="text-button" data-delete-platform="${plataforma.id}">Excluir plataforma</button>
+                    </div>
+                `;
+            })
+            .join("");
+
+        elements.platformsList.querySelectorAll("[data-delete-platform]").forEach((btn) => {
+            btn.addEventListener("click", () => excluirPlataforma(btn.dataset.deletePlatform));
         });
     }
 
@@ -468,6 +518,7 @@
     function renderTudo() {
         popularSelectsDeMateria();
         renderSubjectsPage();
+        renderPlatformsPage();
         renderHomeSubjects();
         renderHomeTasks();
         renderCalendar();
@@ -624,6 +675,52 @@
         }
     }
 
+    /* ---------- Ações: Plataformas ---------- */
+
+    async function excluirPlataforma(id) {
+        if (!window.confirm("Excluir esta plataforma?")) return;
+        try {
+            await api.plataformaService.deletar(id);
+            plataformas = plataformas.filter((p) => String(p.id) !== String(id));
+            renderPlatformsPage();
+        } catch (error) {
+            window.alert(error.message || "Não foi possível excluir a plataforma.");
+        }
+    }
+
+    async function handleSavePlatform() {
+        const nomePlataforma = (elements.platformName.value || "").trim();
+        const descricao = (elements.platformDescription.value || "").trim();
+        const url = (elements.platformUrl.value || "").trim();
+        const usuarioId = getUsuarioId();
+
+        if (!nomePlataforma) {
+            window.alert("Informe um nome para a plataforma.");
+            return;
+        }
+
+        const payload = { nomePlataforma, descricao, url, usuarioId };
+
+        const textoOriginal = elements.savePlatform.textContent;
+        elements.savePlatform.disabled = true;
+        elements.savePlatform.textContent = "Adicionando...";
+
+        try {
+            const criada = await api.plataformaService.criar(payload);
+            plataformas.push(criada || payload);
+            elements.platformModal.classList.add("hidden");
+            elements.platformName.value = "";
+            elements.platformDescription.value = "";
+            elements.platformUrl.value = "";
+            renderPlatformsPage();
+        } catch (error) {
+            window.alert(error.message || "Não foi possível criar a plataforma.");
+        } finally {
+            elements.savePlatform.disabled = false;
+            elements.savePlatform.textContent = textoOriginal;
+        }
+    }
+
     /* ---------- Ligações de UI ---------- */
 
     function bindUI() {
@@ -689,6 +786,20 @@
         }
         if (elements.saveSubject) {
             elements.saveSubject.addEventListener("click", handleSaveSubject);
+        }
+
+        if (elements.addPlatformButton) {
+            elements.addPlatformButton.addEventListener("click", () => {
+                elements.platformModal.classList.remove("hidden");
+            });
+        }
+        if (elements.closePlatformModal) {
+            elements.closePlatformModal.addEventListener("click", () => {
+                elements.platformModal.classList.add("hidden");
+            });
+        }
+        if (elements.savePlatform) {
+            elements.savePlatform.addEventListener("click", handleSavePlatform);
         }
     }
 
