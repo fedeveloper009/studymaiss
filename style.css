@@ -46,6 +46,8 @@ body {
 
     background:
         var(--background);
+    margin-left:
+        10px;
 
     color:
         var(--text);
