@@ -580,7 +580,27 @@
 
         <section id="settingsPage" class="content app-page" data-page="settings">
             <div class="page-header"><div><span class="small-title">PREFERÊNCIAS</span><h1>Configurações</h1><p>Deixe o StudyMais do jeito que funciona para você.</p></div></div>
-            <div class="settings-card"><h2>Rotina de estudos</h2><label>Meta de horas por dia<select id="dailyStudyGoal"><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="4">4 horas</option><option value="5">5 horas</option></select></label><label class="toggle-row"><span>Mostrar lembrete de estudos</span><input id="studyReminder" type="checkbox"><i></i></label><button id="saveSettings" class="save-task">Salvar configurações</button></div>
+            <div class="settings-layout">
+                <div class="settings-card settings-main-card">
+                    <div class="settings-heading"><div class="settings-icon">🎯</div><div><span class="small-title">FOCO DIÁRIO</span><h2>Rotina de estudos</h2></div></div>
+                    <p class="settings-intro">Defina um ritmo possível para manter constância sem perder o foco.</p>
+                    <label>Meta de horas por dia<select id="dailyStudyGoal"><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="4">4 horas</option><option value="5">5 horas</option></select></label>
+                    <label class="toggle-row"><span><strong>Mostrar lembrete de estudos</strong><small>Receba um lembrete para voltar aos seus estudos.</small></span><input id="studyReminder" type="checkbox"><i></i></label>
+                    <button id="saveSettings" class="save-task">Salvar configurações</button>
+                </div>
+                <div class="settings-side-stack">
+                    <div class="settings-card settings-summary-card">
+                        <span class="small-title">SEU RITMO</span>
+                        <h2>Pequenos passos, todos os dias.</h2>
+                        <p>Uma rotina clara ajuda você a transformar tempo de estudo em progresso.</p>
+                        <div class="settings-highlight"><span>⏱️</span><div><strong>Meta diária</strong><small>Atualize sua meta acima</small></div></div>
+                    </div>
+                    <div class="settings-card settings-account-link">
+                        <div class="settings-account-mark">✦</div>
+                        <div><h2>Conta e perfil</h2><p>Gerencie seus dados pessoais na área do perfil.</p></div>
+                    </div>
+                </div>
+            </div>
         </section>
 
     </main>

@@ -3939,6 +3939,310 @@ select:focus-visible {
 }
 
 
+.settings-layout {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        minmax(0, 1.35fr) minmax(260px, .8fr);
+
+    gap:
+        20px;
+
+    align-items:
+        start;
+
+}
+
+
+.settings-main-card {
+
+    max-width:
+        none;
+
+    padding:
+        27px;
+
+}
+
+
+.settings-heading {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        13px;
+
+}
+
+
+.settings-heading h2 {
+
+    margin-top:
+        4px;
+
+}
+
+
+.settings-icon,
+.settings-account-mark {
+
+    width:
+        43px;
+
+    height:
+        43px;
+
+    display:
+        grid;
+
+    place-items:
+        center;
+
+    border-radius:
+        13px;
+
+    background:
+        var(--surface-light);
+
+    color:
+        var(--primary);
+
+    font-size:
+        20px;
+
+}
+
+
+.settings-intro {
+
+    margin:
+        20px 0 2px;
+
+    color:
+        var(--text-light);
+
+    font-size:
+        12px;
+
+    line-height:
+        1.55;
+
+}
+
+
+.settings-card .toggle-row {
+
+    justify-content:
+        space-between;
+
+    padding:
+        16px 0;
+
+    border-top:
+        1px solid var(--border);
+
+    border-bottom:
+        1px solid var(--border);
+
+}
+
+
+.settings-card .toggle-row span {
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    gap:
+        5px;
+
+}
+
+
+.settings-card .toggle-row small {
+
+    color:
+        var(--text-light);
+
+    font-size:
+        10px;
+
+    font-weight:
+        normal;
+
+}
+
+
+.settings-side-stack {
+
+    display:
+        grid;
+
+    gap:
+        16px;
+
+}
+
+
+.settings-summary-card,
+.settings-account-link {
+
+    max-width:
+        none;
+
+    padding:
+        23px;
+
+}
+
+
+.settings-summary-card h2 {
+
+    max-width:
+        230px;
+
+    margin-top:
+        10px;
+
+    font-size:
+        20px;
+
+    line-height:
+        1.2;
+
+}
+
+
+.settings-summary-card > p,
+.settings-account-link p {
+
+    margin-top:
+        9px;
+
+    color:
+        var(--text-light);
+
+    font-size:
+        11px;
+
+    line-height:
+        1.5;
+
+}
+
+
+.settings-highlight {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        11px;
+
+    margin-top:
+        20px;
+
+    padding:
+        12px;
+
+    border-radius:
+        11px;
+
+    background:
+        var(--surface-light);
+
+}
+
+
+.settings-highlight > span {
+
+    font-size:
+        18px;
+
+}
+
+
+.settings-highlight strong,
+.settings-highlight small {
+
+    display:
+        block;
+
+}
+
+
+.settings-highlight strong {
+
+    font-size:
+        11px;
+
+}
+
+
+.settings-highlight small {
+
+    margin-top:
+        3px;
+
+    color:
+        var(--text-light);
+
+    font-size:
+        9px;
+
+}
+
+
+.settings-account-link {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        12px;
+
+}
+
+
+.settings-account-mark {
+
+    width:
+        35px;
+
+    height:
+        35px;
+
+    flex-shrink:
+        0;
+
+    font-size:
+        16px;
+
+}
+
+
+.settings-account-link h2 {
+
+    font-size:
+        14px;
+
+}
+
+
 .settings-card label {
 
     display:
@@ -4042,6 +4346,14 @@ select:focus-visible {
 @media (max-width: 850px) {
 
     .dashboard-grid {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+
+    .settings-layout {
 
         grid-template-columns:
             1fr;
