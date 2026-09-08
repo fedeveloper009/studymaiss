@@ -46,8 +46,6 @@ body {
 
     background:
         var(--background);
-    margin-left:
-        10px;
 
     color:
         var(--text);
@@ -3721,6 +3719,14 @@ select:focus-visible {
 
     font-size:
         11px;
+
+}
+
+
+.subject-card [data-delete-platform] {
+
+    margin-left:
+        14px;
 
 }
 
