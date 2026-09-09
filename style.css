@@ -3923,6 +3923,18 @@ select:focus-visible {
     margin-top: 16px;
 }
 
+.settings-card .photo-actions .photo-upload,
+.settings-card .photo-actions .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-height: 38px;
+    margin: 0;
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
 .photo-upload,
 .secondary-button {
     display: inline-flex;
