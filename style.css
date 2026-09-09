@@ -3940,11 +3940,11 @@ select:focus-visible {
 }
 
 .photo-upload input {
-    display: none;
+    display: none !important;
 }
 
 .profile-photo-hint {
-    margin-top: 8px;
+    margin-top: auto;
 }
 
 
