@@ -86,7 +86,16 @@
     function updateTopbarUser() {
         if (!currentUser || !elements.topbarAvatar) return;
         const nome = (currentUser.nome || "").trim();
-        elements.topbarAvatar.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
+        const foto = currentUser.fotoPerfilUrl;
+        elements.topbarAvatar.textContent = "";
+        if (foto) {
+            const image = document.createElement("img");
+            image.src = foto;
+            image.alt = "";
+            elements.topbarAvatar.appendChild(image);
+        } else {
+            elements.topbarAvatar.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
+        }
         elements.topbarAvatar.title = nome || currentUser.email || "";
     }
 

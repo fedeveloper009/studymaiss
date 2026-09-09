@@ -3908,6 +3908,45 @@ select:focus-visible {
 
 }
 
+.avatar img,
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+}
+
+.photo-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.photo-upload,
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-light);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.photo-upload input {
+    display: none;
+}
+
+.profile-photo-hint {
+    margin-top: 8px;
+}
+
 
 .account-card h2 {
 

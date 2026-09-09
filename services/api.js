@@ -53,9 +53,8 @@
     async function request(path, options = {}) {
         const { method = "GET", body, auth = true } = options;
 
-        const headers = {
-            "Content-Type": "application/json",
-        };
+        const isFormData = body instanceof FormData;
+        const headers = isFormData ? {} : { "Content-Type": "application/json" };
 
         if (auth) {
             const token = getToken();
@@ -70,7 +69,7 @@
             response = await fetch(`${API_BASE_URL}${path}`, {
                 method,
                 headers,
-                body: body !== undefined ? JSON.stringify(body) : undefined,
+                body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
             });
         } catch (networkError) {
             throw new ApiError(
@@ -168,6 +167,20 @@
                 method: "PUT",
                 body: dadosCompletos,
             });
+        },
+
+        alterarSenha(id, dados) {
+            return request(`/usuarios/${id}/senha`, { method: "PUT", body: dados });
+        },
+
+        alterarFoto(id, arquivo) {
+            const dados = new FormData();
+            dados.append("foto", arquivo);
+            return request(`/usuarios/${id}/foto`, { method: "POST", body: dados });
+        },
+
+        removerFoto(id) {
+            return request(`/usuarios/${id}/foto`, { method: "DELETE" });
         },
 
         deletar(id) {

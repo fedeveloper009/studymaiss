@@ -25,12 +25,17 @@
 
     function cacheElements() {
         elements.profileAvatar = document.getElementById("profileAvatar");
+        elements.profilePhoto = document.getElementById("profilePhoto");
+        elements.removePhoto = document.getElementById("removePhoto");
         elements.profileName = document.getElementById("profileName");
         elements.profileSummary = document.getElementById("profileSummary");
 
         elements.accountName = document.getElementById("accountName");
         elements.accountEmail = document.getElementById("accountEmail");
-        elements.accountPassword = document.getElementById("accountPassword");
+        elements.accountCurrentPassword = document.getElementById("accountCurrentPassword");
+        elements.accountNewPassword = document.getElementById("accountNewPassword");
+        elements.accountConfirmPassword = document.getElementById("accountConfirmPassword");
+        elements.changePassword = document.getElementById("changePassword");
         elements.saveAccount = document.getElementById("saveAccount");
 
         elements.accountGoal = document.getElementById("accountGoal");
@@ -60,14 +65,29 @@
         const nome = (user.nome || "").trim();
 
         if (elements.profileAvatar) {
-            elements.profileAvatar.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
+            renderizarAvatar(elements.profileAvatar, nome);
         }
         if (elements.profileName) elements.profileName.textContent = nome || "Minha conta";
         if (elements.profileSummary) elements.profileSummary.textContent = user.email || "Vamos estudar?";
 
         if (elements.accountName) elements.accountName.value = nome;
         if (elements.accountEmail) elements.accountEmail.value = user.email || "";
-        if (elements.accountPassword) elements.accountPassword.value = "";
+        if (elements.accountCurrentPassword) elements.accountCurrentPassword.value = "";
+        if (elements.accountNewPassword) elements.accountNewPassword.value = "";
+        if (elements.accountConfirmPassword) elements.accountConfirmPassword.value = "";
+    }
+
+    function renderizarAvatar(element, nome) {
+        const user = window.StudyMaisAuth.getCurrentUser();
+        element.textContent = "";
+        if (user && user.fotoPerfilUrl) {
+            const image = document.createElement("img");
+            image.src = user.fotoPerfilUrl;
+            image.alt = "Foto de perfil";
+            element.appendChild(image);
+        } else {
+            element.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
+        }
     }
 
     function limparPerfil() {
@@ -76,7 +96,41 @@
         if (elements.profileSummary) elements.profileSummary.textContent = "Vamos estudar?";
         if (elements.accountName) elements.accountName.value = "";
         if (elements.accountEmail) elements.accountEmail.value = "";
-        if (elements.accountPassword) elements.accountPassword.value = "";
+        if (elements.accountCurrentPassword) elements.accountCurrentPassword.value = "";
+        if (elements.accountNewPassword) elements.accountNewPassword.value = "";
+        if (elements.accountConfirmPassword) elements.accountConfirmPassword.value = "";
+    }
+
+    async function salvarFoto(event) {
+        const arquivo = event.target.files && event.target.files[0];
+        const user = window.StudyMaisAuth.getCurrentUser();
+        if (!arquivo || !user) return;
+        if (!arquivo.type.startsWith("image/") || arquivo.size > 2 * 1024 * 1024) {
+            window.alert("Escolha uma imagem válida de até 2 MB.");
+            event.target.value = "";
+            return;
+        }
+        try {
+            const atualizado = await api.usuarioService.alterarFoto(user.id, arquivo);
+            window.StudyMaisAuth.setCurrentUser(atualizado);
+            preencherPerfil();
+        } catch (error) {
+            window.alert(error.message || "Não foi possível alterar a foto.");
+        } finally {
+            event.target.value = "";
+        }
+    }
+
+    async function removerFoto() {
+        const user = window.StudyMaisAuth.getCurrentUser();
+        if (!user || !user.fotoPerfilUrl) return;
+        try {
+            const atualizado = await api.usuarioService.removerFoto(user.id);
+            window.StudyMaisAuth.setCurrentUser(atualizado);
+            preencherPerfil();
+        } catch (error) {
+            window.alert(error.message || "Não foi possível remover a foto.");
+        }
     }
 
     async function salvarPerfil() {
@@ -85,17 +139,15 @@
 
         const nome = (elements.accountName.value || "").trim();
         const email = (elements.accountEmail.value || "").trim();
-        const senha = elements.accountPassword.value;
-
+        const senhaAtual = elements.accountCurrentPassword.value;
         if (!nome || !email) {
             window.alert("Preencha nome e email.");
             return;
         }
-        if (!senha) {
-            window.alert("Informe sua senha para confirmar as alterações.");
+        if (!senhaAtual) {
+            window.alert("Informe sua senha atual para confirmar os dados da conta.");
             return;
         }
-
         const textoOriginal = elements.saveAccount.textContent;
         elements.saveAccount.disabled = true;
         elements.saveAccount.textContent = "Salvando...";
@@ -104,11 +156,8 @@
             // Os campos xp/diasDeSequencia/tempoEstudado/materiaEstudada/
             // conquistas não são enviados aqui: a API mantém os valores
             // já salvos quando eles vêm nulos no corpo da requisição.
-            const atualizado = await api.usuarioService.atualizar(user.id, { nome, email, senha });
+            const atualizado = await api.usuarioService.atualizar(user.id, { nome, email, senha: senhaAtual });
             window.StudyMaisAuth.setCurrentUser(atualizado || { ...user, nome, email });
-            // A senha enviada acima passa a ser a senha atual da conta —
-            // mantém a cópia em memória sincronizada (ver auth.js).
-            window.StudyMaisAuth.setSessionPassword(senha);
             preencherPerfil();
             mostrarSucesso(elements.saveAccount, textoOriginal);
         } catch (error) {
@@ -116,6 +165,38 @@
             elements.saveAccount.textContent = textoOriginal;
         } finally {
             elements.saveAccount.disabled = false;
+        }
+    }
+
+    async function alterarSenha() {
+        const user = window.StudyMaisAuth.getCurrentUser();
+        const senhaAtual = elements.accountCurrentPassword.value;
+        const novaSenha = elements.accountNewPassword.value;
+        const confirmacao = elements.accountConfirmPassword.value;
+        if (!senhaAtual || novaSenha.length < 6 || novaSenha !== confirmacao) {
+            window.alert("Informe a senha atual, uma nova senha com no mínimo 6 caracteres e confirme-a corretamente.");
+            return;
+        }
+        const textoOriginal = elements.changePassword.textContent;
+        elements.changePassword.disabled = true;
+        elements.changePassword.textContent = "Alterando...";
+        try {
+            const atualizado = await api.usuarioService.alterarSenha(user.id, {
+                senhaAtual,
+                novaSenha,
+                confirmacaoNovaSenha: confirmacao,
+            });
+            window.StudyMaisAuth.setCurrentUser(atualizado || user);
+            window.StudyMaisAuth.setSessionPassword(novaSenha);
+            elements.accountCurrentPassword.value = "";
+            elements.accountNewPassword.value = "";
+            elements.accountConfirmPassword.value = "";
+            mostrarSucesso(elements.changePassword, textoOriginal);
+        } catch (error) {
+            window.alert(error.message || "Não foi possível alterar a senha.");
+        } finally {
+            elements.changePassword.disabled = false;
+            if (elements.changePassword.textContent === "Alterando...") elements.changePassword.textContent = textoOriginal;
         }
     }
 
@@ -174,6 +255,9 @@
 
     function bindUI() {
         if (elements.saveAccount) elements.saveAccount.addEventListener("click", salvarPerfil);
+        if (elements.profilePhoto) elements.profilePhoto.addEventListener("change", salvarFoto);
+        if (elements.removePhoto) elements.removePhoto.addEventListener("click", removerFoto);
+        if (elements.changePassword) elements.changePassword.addEventListener("click", alterarSenha);
         if (elements.saveGoal) elements.saveGoal.addEventListener("click", salvarObjetivo);
         if (elements.saveSettings) elements.saveSettings.addEventListener("click", salvarConfiguracoes);
     }
