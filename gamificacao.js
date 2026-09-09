@@ -25,16 +25,11 @@
    2) A cada dia novo em que o usuário conclui uma tarefa, a
       sequência (diasDeSequencia) sobe +1.
 
-      OBS: o model Usuario guarda só a contagem de dias
-      (Integer), sem guardar a *data* do último dia ativo. Sem
-      esse dado, não é possível detectar de forma confiável,
-      entre sessões diferentes, se um dia foi pulado (o que
-      zeraria a sequência) — isso exigiria um novo campo no
-      back-end (ex.: "ultimaAtividade", do tipo data). Por ora,
-      a sequência só é incrementada uma vez por sessão contínua
-      do navegador (nunca duas vezes seguidas sem recarregar a
-      página), o que evita contagem duplicada enquanto o app
-      estiver aberto, mas não substitui um controle por data.
+    A sequência só é incrementada quando uma tarefa é concluída
+    e no máximo uma vez por data, usando um marcador local por
+    usuário. Para detectar dias pulados e sincronizar a regra
+    entre dispositivos, o back-end ainda deveria guardar a data
+    da última atividade (ex.: "ultimaAtividade").
 
    3) O tempo estudado (tempoEstudado, em segundos) e a última
       matéria estudada (materiaEstudada) são atualizados por
@@ -62,9 +57,7 @@
 
     const elements = {};
 
-    // Evita contar mais de um "dia ativo" na mesma sessão do navegador
-    // (ver observação da regra 2 acima). Reseta ao recarregar a página.
-    let diaJaContadoNestaSessao = false;
+    const ULTIMO_DIA_ATIVO_PREFIXO = "studymais_ultimo_dia_ativo_";
 
     /* ---------- Catálogo de conquistas ---------- */
 
@@ -130,6 +123,17 @@
         return (window.StudyMaisDados && window.StudyMaisDados.contarTarefasConcluidas()) || 0;
     }
 
+    function hojeISO() {
+        const hoje = new Date();
+        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+        const dia = String(hoje.getDate()).padStart(2, "0");
+        return `${hoje.getFullYear()}-${mes}-${dia}`;
+    }
+
+    function chaveUltimoDiaAtivo(usuario) {
+        return `${ULTIMO_DIA_ATIVO_PREFIXO}${usuario.id}`;
+    }
+
     /* ---------- Nível (a cada 100 XP) ---------- */
 
     function calcularNivel(xp) {
@@ -162,12 +166,16 @@
     /* ---------- Regras de jogo ---------- */
 
     async function registrarDiaAtivo() {
-        if (diaJaContadoNestaSessao) return;
-        diaJaContadoNestaSessao = true;
-
         const usuario = usuarioAtual();
+        if (!usuario.id) return;
+
+        const hoje = hojeISO();
+        const chave = chaveUltimoDiaAtivo(usuario);
+        if (localStorage.getItem(chave) === hoje) return;
+
         const novoStreak = (usuario.diasDeSequencia || 0) + 1;
         await window.StudyMaisAuth.atualizarProgresso({ diasDeSequencia: novoStreak });
+        localStorage.setItem(chave, hoje);
         render();
         avaliarConquistas();
     }
@@ -260,7 +268,6 @@
     }
 
     function limparEstado() {
-        diaJaContadoNestaSessao = false;
         render();
         renderAchievements();
     }
@@ -271,10 +278,8 @@
         cacheElements();
 
         document.addEventListener("studymais:ready", () => {
-            diaJaContadoNestaSessao = false;
             render();
             renderAchievements();
-            registrarDiaAtivo();
         });
 
         // Disparado por auth.js sempre que o progresso é sincronizado
