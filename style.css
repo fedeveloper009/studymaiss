@@ -3937,6 +3937,8 @@ select:focus-visible {
     font-size: 12px;
     font-weight: bold;
     cursor: pointer;
+    text-align: center;
+    line-height: 1;
 }
 
 .photo-upload input {
@@ -3944,7 +3946,7 @@ select:focus-visible {
 }
 
 .profile-photo-hint {
-    margin-top: auto;
+    margin-top: 6px;
 }
 
 
