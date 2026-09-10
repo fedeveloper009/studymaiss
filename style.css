@@ -3882,6 +3882,21 @@ select:focus-visible {
     height:
         68px;
 
+    aspect-ratio:
+        1;
+
+    min-width:
+        68px;
+
+    min-height:
+        68px;
+
+    max-width:
+        68px;
+
+    max-height:
+        68px;
+
     flex-shrink:
         0;
 
@@ -3910,10 +3925,15 @@ select:focus-visible {
 
 .avatar img,
 .profile-avatar img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: inherit;
+}
+
+.profile-avatar {
+    overflow: hidden;
 }
 
 .photo-actions {
@@ -3921,6 +3941,32 @@ select:focus-visible {
     align-items: center;
     gap: 10px;
     margin-top: 16px;
+}
+
+.profile-photo-status {
+    min-height: 18px;
+    margin: 12px 0 0;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.profile-photo-status.success {
+    color: #2f8f5b;
+}
+
+.profile-photo-status.error {
+    color: #bd4b4b;
+}
+
+.profile-password-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.profile-password-actions button {
+    flex: 1;
+    margin-top: 0;
 }
 
 .settings-card .photo-actions .photo-upload,

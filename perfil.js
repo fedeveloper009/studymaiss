@@ -22,6 +22,7 @@
     const SETTINGS_STORAGE_KEY = "studymais_settings";
 
     const elements = {};
+    let fotoPreviewUrl = null;
 
     function cacheElements() {
         elements.profileAvatar = document.getElementById("profileAvatar");
@@ -29,6 +30,13 @@
         elements.removePhoto = document.getElementById("removePhoto");
         elements.profileName = document.getElementById("profileName");
         elements.profileSummary = document.getElementById("profileSummary");
+        elements.profilePhotoStatus = document.getElementById("profilePhotoStatus");
+        elements.profilePasswordModal = document.getElementById("profilePasswordModal");
+        elements.profilePasswordTitle = document.getElementById("profilePasswordTitle");
+        elements.profilePasswordInput = document.getElementById("profilePasswordInput");
+        elements.closeProfilePasswordModal = document.getElementById("closeProfilePasswordModal");
+        elements.cancelProfilePassword = document.getElementById("cancelProfilePassword");
+        elements.confirmProfilePassword = document.getElementById("confirmProfilePassword");
 
         elements.accountName = document.getElementById("accountName");
         elements.accountEmail = document.getElementById("accountEmail");
@@ -56,6 +64,12 @@
         }, 1800);
     }
 
+    function mostrarStatusFoto(mensagem, tipo) {
+        if (!elements.profilePhotoStatus) return;
+        elements.profilePhotoStatus.textContent = mensagem;
+        elements.profilePhotoStatus.className = `profile-photo-status ${tipo}`;
+    }
+
     /* ---------- Perfil (dados reais do usuário) ---------- */
 
     function preencherPerfil() {
@@ -77,14 +91,34 @@
         if (elements.accountConfirmPassword) elements.accountConfirmPassword.value = "";
     }
 
-    function renderizarAvatar(element, nome) {
+    async function renderizarAvatar(element, nome, previewUrl) {
         const user = window.StudyMaisAuth.getCurrentUser();
         element.textContent = "";
-        if (user && user.fotoPerfilUrl) {
+        if (previewUrl || (user && user.fotoPerfilUrl)) {
             const image = document.createElement("img");
-            image.src = user.fotoPerfilUrl;
+            const foto = previewUrl || user.fotoPerfilUrl;
+            const separador = foto.includes("?") ? "&" : "?";
             image.alt = "Foto de perfil";
+            image.onerror = () => {
+                mostrarStatusFoto("A foto foi enviada, mas não foi possível carregá-la.", "error");
+            };
             element.appendChild(image);
+            if (previewUrl) {
+                image.src = previewUrl;
+                return;
+            }
+            try {
+                const resposta = await fetch(`${foto}${separador}v=${Date.now()}`, {
+                    cache: "no-store",
+                    headers: { "Cache-Control": "no-cache" },
+                });
+                if (!resposta.ok) throw new Error("A imagem não pôde ser carregada.");
+                const blob = await resposta.blob();
+                image.src = URL.createObjectURL(blob);
+            } catch (error) {
+                console.error("[StudyMais] Falha ao carregar foto de perfil:", error);
+                image.src = `${foto}${separador}v=${Date.now()}-fallback`;
+            }
         } else {
             element.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
         }
@@ -101,6 +135,43 @@
         if (elements.accountConfirmPassword) elements.accountConfirmPassword.value = "";
     }
 
+    function pedirSenhaConfirmacao(acao) {
+        return new Promise((resolve) => {
+            elements.profilePasswordTitle.textContent = `Confirme ${acao}`;
+            elements.profilePasswordInput.value = "";
+            elements.profilePasswordModal.classList.remove("hidden");
+            elements.profilePasswordInput.focus();
+
+            const finalizar = (senha) => {
+                elements.profilePasswordModal.classList.add("hidden");
+                elements.profilePasswordInput.value = "";
+                resolve(senha && senha.trim() ? senha : null);
+            };
+
+            const confirmar = () => finalizar(elements.profilePasswordInput.value);
+            elements.confirmProfilePassword.onclick = confirmar;
+            elements.cancelProfilePassword.onclick = () => finalizar(null);
+            elements.closeProfilePasswordModal.onclick = () => finalizar(null);
+            elements.profilePasswordInput.onkeydown = (event) => {
+                if (event.key === "Enter") confirmar();
+                if (event.key === "Escape") finalizar(null);
+            };
+        });
+    }
+
+    async function fotoRemotaConfereComArquivo(url, arquivo) {
+        const separador = url.includes("?") ? "&" : "?";
+        const resposta = await fetch(`${url}${separador}verify=${Date.now()}`, {
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" },
+        });
+        if (!resposta.ok) return false;
+        const remoto = new Uint8Array(await resposta.arrayBuffer());
+        const local = new Uint8Array(await arquivo.arrayBuffer());
+        if (remoto.length !== local.length) return false;
+        return remoto.every((byte, index) => byte === local[index]);
+    }
+
     async function salvarFoto(event) {
         const arquivo = event.target.files && event.target.files[0];
         const user = window.StudyMaisAuth.getCurrentUser();
@@ -110,12 +181,30 @@
             event.target.value = "";
             return;
         }
+        const senha = await pedirSenhaConfirmacao("a alteração da foto");
+        if (!senha) {
+            mostrarStatusFoto("A foto não foi atualizada: confirmação cancelada.", "error");
+            event.target.value = "";
+            return;
+        }
         try {
-            const atualizado = await api.usuarioService.alterarFoto(user.id, arquivo);
+            await api.usuarioService.alterarFoto(user.id, arquivo, senha);
+            // O POST pode retornar 200 sem devolver o usuário persistido.
+            // Buscamos o registro novamente para confirmar a URL salva.
+            const atualizado = await api.usuarioService.obterAtual();
+            if (!atualizado) throw new Error("A API não confirmou a atualização da foto.");
+            if (!atualizado.fotoPerfilUrl || !(await fotoRemotaConfereComArquivo(atualizado.fotoPerfilUrl, arquivo))) {
+                throw new Error("O upload respondeu, mas a imagem nova ainda não está disponível na URL do perfil.");
+            }
             window.StudyMaisAuth.setCurrentUser(atualizado);
             preencherPerfil();
+            if (fotoPreviewUrl) URL.revokeObjectURL(fotoPreviewUrl);
+            fotoPreviewUrl = URL.createObjectURL(arquivo);
+            renderizarAvatar(elements.profileAvatar, (atualizado.nome || "").trim(), fotoPreviewUrl);
+            mostrarStatusFoto("Foto de perfil atualizada com sucesso.", "success");
         } catch (error) {
-            window.alert(error.message || "Não foi possível alterar a foto.");
+            console.error("[StudyMais] Falha ao alterar foto de perfil:", error);
+            mostrarStatusFoto(`A foto não foi atualizada. ${error.message || "Tente novamente."}`, "error");
         } finally {
             event.target.value = "";
         }
@@ -124,12 +213,24 @@
     async function removerFoto() {
         const user = window.StudyMaisAuth.getCurrentUser();
         if (!user || !user.fotoPerfilUrl) return;
+        const senha = await pedirSenhaConfirmacao("a remoção da foto");
+        if (!senha) {
+            mostrarStatusFoto("A foto não foi removida: confirmação cancelada.", "error");
+            return;
+        }
         try {
-            const atualizado = await api.usuarioService.removerFoto(user.id);
+            const resposta = await api.usuarioService.removerFoto(user.id, senha);
+            const atualizado = resposta || { ...user, fotoPerfilUrl: null };
             window.StudyMaisAuth.setCurrentUser(atualizado);
+            if (fotoPreviewUrl) {
+                URL.revokeObjectURL(fotoPreviewUrl);
+                fotoPreviewUrl = null;
+            }
             preencherPerfil();
+            mostrarStatusFoto("Foto de perfil removida com sucesso.", "success");
         } catch (error) {
-            window.alert(error.message || "Não foi possível remover a foto.");
+            console.error("[StudyMais] Falha ao remover foto de perfil:", error);
+            mostrarStatusFoto(`A foto não foi removida. ${error.message || "Tente novamente."}`, "error");
         }
     }
 
@@ -139,13 +240,13 @@
 
         const nome = (elements.accountName.value || "").trim();
         const email = (elements.accountEmail.value || "").trim();
-        const senhaAtual = elements.accountCurrentPassword.value;
         if (!nome || !email) {
             window.alert("Preencha nome e email.");
             return;
         }
+        const senhaAtual = await pedirSenhaConfirmacao("as alterações do perfil");
         if (!senhaAtual) {
-            window.alert("Informe sua senha atual para confirmar os dados da conta.");
+            window.alert("O salvamento do perfil foi cancelado.");
             return;
         }
         const textoOriginal = elements.saveAccount.textContent;
@@ -161,6 +262,7 @@
             preencherPerfil();
             mostrarSucesso(elements.saveAccount, textoOriginal);
         } catch (error) {
+            console.error("[StudyMais] Falha ao salvar perfil:", error);
             window.alert(error.message || "Não foi possível salvar o perfil. Confira a senha e tente de novo.");
             elements.saveAccount.textContent = textoOriginal;
         } finally {

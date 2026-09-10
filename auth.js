@@ -90,7 +90,8 @@
         elements.topbarAvatar.textContent = "";
         if (foto) {
             const image = document.createElement("img");
-            image.src = foto;
+            const separador = foto.includes("?") ? "&" : "?";
+            image.src = `${foto}${separador}v=${Date.now()}`;
             image.alt = "";
             elements.topbarAvatar.appendChild(image);
         } else {

@@ -173,14 +173,18 @@
             return request(`/usuarios/${id}/senha`, { method: "PUT", body: dados });
         },
 
-        alterarFoto(id, arquivo) {
+        alterarFoto(id, arquivo, senha) {
             const dados = new FormData();
             dados.append("foto", arquivo);
+            dados.append("senha", senha);
             return request(`/usuarios/${id}/foto`, { method: "POST", body: dados });
         },
 
-        removerFoto(id) {
-            return request(`/usuarios/${id}/foto`, { method: "DELETE" });
+        removerFoto(id, senha) {
+            return request(`/usuarios/${id}/foto`, {
+                method: "DELETE",
+                body: { senha },
+            });
         },
 
         deletar(id) {
