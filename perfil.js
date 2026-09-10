@@ -92,16 +92,20 @@
     }
 
     async function renderizarAvatar(element, nome, previewUrl) {
-        const user = window.StudyMaisAuth.getCurrentUser();
+        const user = window.StudyMaisAuth && window.StudyMaisAuth.getCurrentUser ? window.StudyMaisAuth.getCurrentUser() : null;
+        const fallback = nome ? nome.charAt(0).toUpperCase() : (user && user.nome ? user.nome.charAt(0).toUpperCase() : "?");
         element.textContent = "";
         if (previewUrl || (user && user.fotoPerfilUrl)) {
             const image = document.createElement("img");
             const foto = previewUrl || user.fotoPerfilUrl;
             const separador = foto.includes("?") ? "&" : "?";
-            image.alt = "Foto de perfil";
-            image.onerror = () => {
-                mostrarStatusFoto("A foto foi enviada, mas não foi possível carregá-la.", "error");
+            const aplicarFallback = () => {
+                image.remove();
+                element.textContent = fallback;
+                mostrarStatusFoto("A foto não pôde ser carregada e foi exibida a inicial do perfil.", "error");
             };
+            image.alt = "Foto de perfil";
+            image.onerror = aplicarFallback;
             element.appendChild(image);
             if (previewUrl) {
                 image.src = previewUrl;
@@ -117,10 +121,10 @@
                 image.src = URL.createObjectURL(blob);
             } catch (error) {
                 console.error("[StudyMais] Falha ao carregar foto de perfil:", error);
-                image.src = `${foto}${separador}v=${Date.now()}-fallback`;
+                aplicarFallback();
             }
         } else {
-            element.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
+            element.textContent = fallback;
         }
     }
 

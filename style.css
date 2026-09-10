@@ -509,6 +509,9 @@ nav {
     border-radius:
         50%;
 
+    overflow:
+        hidden;
+
     background:
         linear-gradient(
             135deg,

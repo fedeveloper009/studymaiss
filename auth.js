@@ -87,15 +87,20 @@
         if (!currentUser || !elements.topbarAvatar) return;
         const nome = (currentUser.nome || "").trim();
         const foto = currentUser.fotoPerfilUrl;
+        const fallback = nome ? nome.charAt(0).toUpperCase() : "?";
         elements.topbarAvatar.textContent = "";
         if (foto) {
             const image = document.createElement("img");
             const separador = foto.includes("?") ? "&" : "?";
             image.src = `${foto}${separador}v=${Date.now()}`;
             image.alt = "";
+            image.onerror = () => {
+                image.remove();
+                elements.topbarAvatar.textContent = fallback;
+            };
             elements.topbarAvatar.appendChild(image);
         } else {
-            elements.topbarAvatar.textContent = nome ? nome.charAt(0).toUpperCase() : "?";
+            elements.topbarAvatar.textContent = fallback;
         }
         elements.topbarAvatar.title = nome || currentUser.email || "";
     }
