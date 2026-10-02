@@ -252,6 +252,57 @@
         },
     };
 
+    /* ---------- Serviço: Exercícios ---------- */
+
+    const exercicioService = {
+        listarTopicos(materia) {
+            const params = new URLSearchParams();
+            if (materia) params.set("materia", materia);
+            const consulta = params.toString();
+
+            return request(
+                `/exercicios/topicos${consulta ? `?${consulta}` : ""}`,
+                { method: "GET" }
+            );
+        },
+
+        /**
+         * Pede ao back-end a próxima questão (a seleção aleatória é feita lá).
+         * `sessaoId` é opcional na primeira chamada: o servidor cria uma
+         * sessão e a devolve na resposta; reenviá-la nas chamadas seguintes
+         * evita repetir questões já apresentadas.
+         *
+         * Retorna { apresentacaoId, sessaoId, id, materia, topico, subtopico,
+         *           textoBase, enunciado, tipoResposta, alternativas, dificuldade }.
+         * tipoResposta: "ALTERNATIVA_UNICA" | "SELECAO_MULTIPLA".
+         */
+        proximaQuestao({ materia, topico, sessaoId } = {}) {
+            const params = new URLSearchParams();
+            if (materia) params.set("materia", materia);
+            if (topico) params.set("topico", topico);
+            if (sessaoId) params.set("sessaoId", sessaoId);
+            const consulta = params.toString();
+
+            return request(
+                `/exercicios/questoes/proxima${consulta ? `?${consulta}` : ""}`,
+                { method: "GET" }
+            );
+        },
+
+        /**
+         * Envia a resposta (textos das alternativas marcadas). A correção é
+         * feita pelo servidor.
+         * Retorna { apresentacaoId, correta, respostasCorretas, explicacao };
+         * respostasCorretas e explicacao podem vir nulos.
+         */
+        responder(apresentacaoId, respostas) {
+            return request(`/exercicios/questoes/${apresentacaoId}/resposta`, {
+                method: "POST",
+                body: { respostas },
+            });
+        },
+    };
+
     /* ---------- Exposição global ---------- */
 
     window.StudyMaisAPI = {
@@ -266,5 +317,6 @@
         materiaService,
         tarefaService,
         plataformaService,
+        exercicioService,
     };
 })();

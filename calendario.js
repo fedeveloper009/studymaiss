@@ -40,6 +40,11 @@
         menuItems.forEach((item) => {
             item.classList.toggle("active", item.dataset.page === pageName);
         });
+
+        // Avisa outros módulos (ex.: exercicios.js) de que a página mudou.
+        document.dispatchEvent(
+            new CustomEvent("studymais:page-change", { detail: { page: pageName } })
+        );
     }
 
     function openPremiumModal() {
@@ -79,4 +84,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", init);
+
+    // Permite que outros módulos naveguem entre as páginas.
+    window.StudyMaisNav = { goToPage };
 })();

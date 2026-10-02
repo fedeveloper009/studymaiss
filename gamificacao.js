@@ -197,6 +197,17 @@
         render();
     }
 
+    async function registrarRespostaExercicio(tipoResposta, correta) {
+        if (correta !== true) return;
+
+        const xpGanho = tipoResposta === "SELECAO_MULTIPLA" ? 10 :
+            tipoResposta === "ALTERNATIVA_UNICA" ? 5 : 0;
+        if (xpGanho === 0) return;
+
+        const usuario = usuarioAtual();
+        await window.StudyMaisAuth.atualizarProgresso({ xp: (usuario.xp || 0) + xpGanho });
+    }
+
     /* ---------- Render ---------- */
 
     function cacheElements() {
@@ -300,6 +311,8 @@
             }
         });
     }
+
+    window.StudyMaisGamificacao = { registrarRespostaExercicio };
 
     document.addEventListener("DOMContentLoaded", init);
 })();

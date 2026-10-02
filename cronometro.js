@@ -2,12 +2,12 @@
    STUDYMAIS
    cronometro.js
 
-   Cronômetro de estudo (Iniciar/Pausar/Zerar).
+    Cronômetro de estudo (Iniciar/Pausar/Zerar).
 
    O tempo estudado (em segundos) e a última matéria estudada
-   agora são campos reais do usuário na API (tempoEstudado e
-   materiaEstudada) — ao encerrar uma sessão ("Zerar"), a
-   duração é somada ao total do usuário e enviada com
+    agora são campos reais do usuário na API (tempoEstudado e
+    materiaEstudada) — ao pausar ou encerrar uma sessão ("Zerar"),
+    o tempo pendente é enviado com
    window.StudyMaisAuth.atualizarProgresso() (ver auth.js).
    Nada disso fica mais salvo no localStorage.
 
@@ -42,8 +42,11 @@
         running: false,
         inicioMs: 0,
         acumuladoMs: 0,
+        registradoMs: 0,
         intervalId: null,
     };
+    let promessaRegistro = null;
+    let zerandoTimer = false;
 
     // Tempo estudado só nesta sessão do navegador (ver observação acima).
     // Não é persistido em lugar nenhum — existe apenas para alimentar o
@@ -81,13 +84,11 @@
         const usuario = usuarioAtual();
         const novoTempoEstudado = (usuario.tempoEstudado || 0) + duracaoSegundos;
 
-        estudadoNestaSessaoMs += duracaoMs;
-        atualizarResumoHoje();
-
-        await window.StudyMaisAuth.atualizarProgresso({
+        const atualizado = await window.StudyMaisAuth.atualizarProgresso({
             tempoEstudado: novoTempoEstudado,
             materiaEstudada: materiaNome,
         });
+        return Boolean(atualizado);
     }
 
     /* ---------- Meta diária (só local, configurada em Configurações) ---------- */
@@ -159,9 +160,10 @@
     }
 
     function atualizarBotoes() {
-        if (elements.startTimer) elements.startTimer.disabled = estadoTimer.running;
-        if (elements.pauseTimer) elements.pauseTimer.disabled = !estadoTimer.running;
-        if (elements.timerSubject) elements.timerSubject.disabled = estadoTimer.running;
+        if (elements.startTimer) elements.startTimer.disabled = estadoTimer.running || zerandoTimer;
+        if (elements.pauseTimer) elements.pauseTimer.disabled = !estadoTimer.running || zerandoTimer;
+        if (elements.timerSubject) elements.timerSubject.disabled = estadoTimer.running || zerandoTimer;
+        if (elements.resetTimer) elements.resetTimer.disabled = zerandoTimer;
     }
 
     function pararIntervalo() {
@@ -187,25 +189,69 @@
         pararIntervalo();
         atualizarBotoes();
         atualizarDisplay();
+        registrarTempoPendente();
     }
 
     function pararSemSalvar() {
         pararIntervalo();
-        estadoTimer = { running: false, inicioMs: 0, acumuladoMs: 0, intervalId: null };
+        estadoTimer = {
+            running: false,
+            inicioMs: 0,
+            acumuladoMs: 0,
+            registradoMs: 0,
+            intervalId: null,
+        };
         atualizarBotoes();
         atualizarDisplay();
     }
 
-    // "Zerar" também é o momento em que a sessão é encerrada: se havia
-    // tempo estudado, ele é somado ao total do usuário (API) antes do
-    // display voltar a 00:00:00.
-    function zerarTimer() {
-        const duracaoMs = tempoAtualMs();
-        pararSemSalvar();
-
-        if (duracaoMs >= 1000) {
-            registrarSessao(duracaoMs);
+    async function registrarTempoPendente() {
+        if (promessaRegistro) {
+            const salvouRegistroAtual = await promessaRegistro;
+            if (!salvouRegistroAtual) return false;
+            return registrarTempoPendente();
         }
+
+        const estadoAtual = estadoTimer;
+        const segundosPendentes = Math.floor(
+            (tempoAtualMs() - estadoAtual.registradoMs) / 1000
+        );
+        if (segundosPendentes <= 0) return true;
+
+        const usuarioId = usuarioAtual().id;
+        promessaRegistro = (async () => {
+            const salvou = await registrarSessao(segundosPendentes * 1000);
+            if (!salvou || estadoTimer !== estadoAtual || usuarioAtual().id !== usuarioId) {
+                return false;
+            }
+
+            estadoAtual.registradoMs += segundosPendentes * 1000;
+            estudadoNestaSessaoMs += segundosPendentes * 1000;
+            atualizarResumoHoje();
+            return true;
+        })().finally(() => {
+            promessaRegistro = null;
+        });
+
+        return promessaRegistro;
+    }
+
+    async function zerarTimer() {
+        if (zerandoTimer) return;
+        zerandoTimer = true;
+
+        if (estadoTimer.running) {
+            estadoTimer.acumuladoMs += Date.now() - estadoTimer.inicioMs;
+            estadoTimer.running = false;
+            pararIntervalo();
+            atualizarBotoes();
+            atualizarDisplay();
+        }
+
+        const salvou = await registrarTempoPendente();
+        zerandoTimer = false;
+        if (salvou) pararSemSalvar();
+        else atualizarBotoes();
     }
 
     /* ---------- Ligações de UI ---------- */

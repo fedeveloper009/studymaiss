@@ -11,6 +11,7 @@ Aplicação web para organização da rotina de estudos. O StudyMais reúne tare
 - Cadastro, edição e exclusão de tarefas.
 - Calendário mensal para organizar tarefas por data.
 - Cadastro e gerenciamento de plataformas de estudo.
+- Exercícios por matéria e tópico (hoje: Matemática > Frações), com uma questão por vez.
 - Cronômetro de foco e registro do tempo estudado.
 - Sistema de XP e níveis.
 - Sequência de estudos por dia ativo.
@@ -76,12 +77,30 @@ Essa URL está definida em `services/api.js`, na constante `API_BASE_URL`.
 | `/materias` | Listagem, criação, edição e exclusão |
 | `/tarefas` | Listagem, criação, edição e exclusão |
 | `/plataformas` | Listagem, criação, edição e exclusão |
+| `/exercicios/topicos?materia=...` | Catálogo de tópicos com conteúdo introdutório |
+| `/exercicios/questoes/proxima` | Próxima questão de uma matéria/tópico (sorteio feito no back-end) |
+| `/exercicios/questoes/{apresentacaoId}/resposta` | Envio da resposta e correção (feita no back-end) |
 
 As rotas protegidas recebem o token no cabeçalho:
 
 ```http
 Authorization: Bearer <token>
 ```
+
+## Exercícios
+
+Os exercícios seguem a hierarquia **matéria > tópico**, carregada dinamicamente de `/exercicios/topicos`. O catálogo inclui Matemática > Frações e Português > Interpretação de texto. Cada tópico traz `conteudo` com `resumo`, `formulas`, `significadosSimbolos`, `exemploResolvido`, `revisaoNecessaria` e `notaRevisao`.
+
+Fluxo da tela:
+
+1. Ao selecionar uma matéria e tópico, o front-end mostra o conteúdo introdutório retornado por `GET /exercicios/topicos?materia=...`. Fórmulas e significados dos símbolos aparecem somente quando há fórmulas cadastradas.
+2. A primeira questão só é solicitada ao selecionar **Começar exercício**, usando `GET /exercicios/questoes/proxima?materia=...&topico=...`.
+3. O servidor devolve `apresentacaoId`, `sessaoId`, `enunciado`, `tipoResposta` e `alternativas`. O `sessaoId` é guardado em memória e reenviado nos pedidos seguintes, para o back-end evitar repetições.
+4. `tipoResposta` define o controle: `ALTERNATIVA_UNICA` usa botões de opção e `SELECAO_MULTIPLA` usa caixas de seleção.
+5. O envio chama `POST /exercicios/questoes/{apresentacaoId}/resposta` com `{ "respostas": ["texto da alternativa", ...] }`. A correção é feita só no back-end; a tela exibe `correta`, `respostasCorretas` e `explicacao` quando vierem na resposta.
+6. **Próxima questão** repete o passo 2. **Lista de tópicos** retorna à hierarquia de matérias e tópicos.
+
+O endpoint introdutório retorna a hierarquia matéria → tópico → subtópico. O nome de matéria e tópico enviado às rotas de questões deve corresponder ao valor gravado no back-end (inclusive acentos).
 
 ## Autenticação e sessão
 
@@ -111,6 +130,7 @@ studymaiss/
 ├── auth.js                 # Login, cadastro, sessão e logout
 ├── calendario.js            # Navegação entre páginas e calendário
 ├── dados.js                 # Matérias, tarefas e plataformas
+├── exercicios.js            # Exercícios: menu matéria > tópico e tela de questões
 ├── perfil.js                # Perfil, foto e preferências da conta
 ├── gamificacao.js           # XP, níveis, sequência e conquistas
 ├── conquistas.js            # Renderização de badges/conquistas

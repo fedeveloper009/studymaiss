@@ -132,6 +132,11 @@
                 <span>Conquistas</span>
             </button>
 
+            <button class="menu-item" data-page="exercises">
+                ✏️
+                <span>Exercícios</span>
+            </button>
+
             <button id="premiumButton" class="menu-item premium" data-page="premium">
                 💎
                 <span>Premium</span>
@@ -549,6 +554,14 @@
         </section>
 
 
+        <!-- ================= EXERCÍCIOS ================= -->
+
+        <section id="exercisesPage" class="content app-page" data-page="exercises" aria-labelledby="exercisesTitle">
+            <div class="page-header"><div><span id="exercisesSubject" class="small-title">MATEMÁTICA</span><h1 id="exercisesTitle">Frações</h1><p id="exercisesDescription">Resolva uma questão por vez e veja o resultado ao enviar a resposta.</p></div></div>
+            <div id="exercisesBody" class="exercise-body" aria-live="off" aria-busy="false"></div>
+        </section>
+
+
         <!-- ================= PROGRESSO ================= -->
 
         <section id="progressPage" class="content app-page" data-page="progress">
@@ -821,10 +834,11 @@
 </div>
 
 
-<script src="services/api.js"></script>
+<script src="services/api.js?v=2"></script>
 <script src="auth.js?v=2"></script>
-<script src="calendario.js"></script>
+<script src="calendario.js?v=2"></script>
 <script src="dados.js"></script>
+<script src="exercicios.js"></script>
 <script src="perfil.js?v=3"></script>
 <script src="gamificacao.js"></script>
 <script src="cronometro.js"></script>
