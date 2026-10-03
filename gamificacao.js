@@ -22,14 +22,9 @@
       (para não ser possível "farmar" XP marcando e
       desmarcando a mesma tarefa).
 
-   2) A cada dia novo em que o usuário conclui uma tarefa, a
-      sequência (diasDeSequencia) sobe +1.
-
-    A sequência só é incrementada quando uma tarefa é concluída
-    e no máximo uma vez por data, usando um marcador local por
-    usuário. Para detectar dias pulados e sincronizar a regra
-    entre dispositivos, o back-end ainda deveria guardar a data
-    da última atividade (ex.: "ultimaAtividade").
+    2) A sequência (diasDeSequencia) é atualizada pelo back-end
+        quando o usuário faz login ou restaura uma sessão. A data
+        é controlada no servidor para aplicar a regra entre dispositivos.
 
    3) O tempo estudado (tempoEstudado, em segundos) e a última
       matéria estudada (materiaEstudada) são atualizados por
@@ -56,8 +51,6 @@
     const XP_POR_NIVEL = 100;
 
     const elements = {};
-
-    const ULTIMO_DIA_ATIVO_PREFIXO = "studymais_ultimo_dia_ativo_";
 
     /* ---------- Catálogo de conquistas ---------- */
 
@@ -123,17 +116,6 @@
         return (window.StudyMaisDados && window.StudyMaisDados.contarTarefasConcluidas()) || 0;
     }
 
-    function hojeISO() {
-        const hoje = new Date();
-        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-        const dia = String(hoje.getDate()).padStart(2, "0");
-        return `${hoje.getFullYear()}-${mes}-${dia}`;
-    }
-
-    function chaveUltimoDiaAtivo(usuario) {
-        return `${ULTIMO_DIA_ATIVO_PREFIXO}${usuario.id}`;
-    }
-
     /* ---------- Nível (a cada 100 XP) ---------- */
 
     function calcularNivel(xp) {
@@ -165,28 +147,11 @@
 
     /* ---------- Regras de jogo ---------- */
 
-    async function registrarDiaAtivo() {
-        const usuario = usuarioAtual();
-        if (!usuario.id) return;
-
-        const hoje = hojeISO();
-        const chave = chaveUltimoDiaAtivo(usuario);
-        if (localStorage.getItem(chave) === hoje) return;
-
-        const novoStreak = (usuario.diasDeSequencia || 0) + 1;
-        await window.StudyMaisAuth.atualizarProgresso({ diasDeSequencia: novoStreak });
-        localStorage.setItem(chave, hoje);
-        render();
-        avaliarConquistas();
-    }
-
     async function tarefaConcluida() {
         const usuario = usuarioAtual();
         const novoXp = (usuario.xp || 0) + XP_POR_TAREFA;
         await window.StudyMaisAuth.atualizarProgresso({ xp: novoXp });
         render();
-        // Concluir uma tarefa também conta como dia ativo.
-        await registrarDiaAtivo();
         avaliarConquistas();
     }
 

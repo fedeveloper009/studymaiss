@@ -327,6 +327,13 @@
 
         try {
             await loadCurrentUser();
+            try {
+                await api.authService.registrarAtividade();
+                await loadCurrentUser();
+            } catch (error) {
+                if (error.status === 401 || error.status === 403) throw error;
+                console.error("[StudyMais] Não foi possível registrar a atividade diária:", error);
+            }
             showApp();
         } catch (error) {
             api.clearToken();

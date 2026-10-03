@@ -483,25 +483,43 @@
             return;
         }
 
-        const grupos = catalogo.map((materia) =>
-            el("section", { class: "exercise-topic-group" }, [
-                el("h2", { text: materia.nome }),
-                el(
-                    "ul",
-                    { class: "exercise-topic-list" },
-                    materia.topicos.map((topico) =>
-                        el("li", {}, [
-                            el("button", {
-                                type: "button",
-                                class: "exercise-topic-link",
-                                text: topico.nome,
-                                onclick: () => abrirTopico(materia, topico),
-                            }),
-                        ])
-                    )
-                ),
-            ])
-        );
+        const grupos = catalogo.map((materia, indice) => {
+            const listaId = `exercise-topic-list-${indice}`;
+            const icones = {
+                Matemática: "📐",
+                Português: "📖",
+            };
+            const lista = el(
+                "ul",
+                { id: listaId, class: "exercise-topic-list", hidden: true },
+                materia.topicos.map((topico) =>
+                    el("li", {}, [
+                        el("button", {
+                            type: "button",
+                            class: "exercise-topic-link",
+                            text: topico.nome,
+                            onclick: () => abrirTopico(materia, topico),
+                        }),
+                    ])
+                )
+            );
+            const botaoMateria = el("button", {
+                type: "button",
+                class: "exercise-subject-button",
+                "aria-expanded": "false",
+                "aria-controls": listaId,
+                onclick: (evento) => {
+                    const expandido = evento.currentTarget.getAttribute("aria-expanded") === "true";
+                    evento.currentTarget.setAttribute("aria-expanded", String(!expandido));
+                    lista.hidden = expandido;
+                },
+            }, [
+                el("span", { class: "exercise-subject-icon", "aria-hidden": "true", text: icones[materia.nome] || "📚" }),
+                el("span", { text: materia.nome }),
+            ]);
+
+            return el("section", { class: "exercise-topic-group" }, [botaoMateria, lista]);
+        });
 
         elements.body.setAttribute("aria-busy", "false");
         elements.body.replaceChildren(

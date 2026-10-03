@@ -117,9 +117,9 @@ A senha não é armazenada no `localStorage`. Ela permanece apenas em memória d
 
 ## Sequência de estudos
 
-A sequência é aumentada quando o usuário conclui uma tarefa. A mesma data não é contabilizada novamente ao recarregar ou reabrir o site.
+A sequência é atualizada pela API no login e quando o site restaura uma sessão autenticada. O mesmo dia não conta duas vezes; no dia seguinte a sequência aumenta em 1; após um dia sem acesso, o próximo acesso reinicia a sequência em 1. A cada marco de 7 dias consecutivos, o usuário ganha 70 XP. A API usa o fuso `America/Sao_Paulo` e persiste a última data de login por usuário.
 
-A data do último dia ativo é mantida localmente com uma chave específica do usuário. Para que a sequência seja totalmente confiável entre dispositivos e consiga detectar dias pulados, o back-end deve armazenar também a data da última atividade, por exemplo, em um campo `ultimaAtividade`.
+Concluir tarefas concede XP, mas não altera a sequência. A data é controlada no servidor, então a regra funciona entre dispositivos.
 
 ## Estrutura do projeto
 
@@ -155,7 +155,6 @@ Os dados principais do usuário, tarefas, matérias, plataformas, XP e conquista
 - `studymais-theme`: tema selecionado;
 - `studymais_goal`: objetivo pessoal;
 - `studymais_settings`: preferências locais;
-- `studymais_ultimo_dia_ativo_{id}`: data local usada para evitar duplicidade na sequência.
 
 Limpar os dados do site pode remover a sessão e essas preferências locais.
 
@@ -175,8 +174,8 @@ O projeto usa JavaScript no escopo global para compartilhar serviços entre os m
 - O front-end depende da disponibilidade da API hospedada no Render.
 - O token JWT depende da validade configurada no back-end.
 - A API exige a senha no payload de algumas atualizações de usuário, o que limita a sincronização automática de progresso após um recarregamento.
-- A sequência ainda usa um marcador local; a solução definitiva requer persistir a data da última atividade no servidor.
-- Não há testes automatizados configurados no repositório.
+- A atualização da sequência depende da disponibilidade do endpoint autenticado `POST /api/auth/activity` ao restaurar uma sessão.
+- O front-end não possui testes automatizados configurados; a API tem testes da regra de sequência.
 
 ## Segurança
 

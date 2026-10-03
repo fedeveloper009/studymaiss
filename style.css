@@ -4691,6 +4691,48 @@ body.dark .exercise-state {
 
 }
 
+.exercise-subject-button {
+
+    min-height: 48px;
+    margin-bottom: 12px;
+    padding: 8px 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+
+}
+
+.exercise-subject-icon {
+
+    font-size: 22px;
+    line-height: 1;
+
+}
+
+.exercise-subject-button:hover,
+.exercise-subject-button[aria-expanded="true"] {
+
+    border-color: var(--primary);
+    background: var(--surface-light);
+
+}
+
+.exercise-subject-button:focus-visible {
+
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+
+}
+
 .exercise-topic-list {
 
     display: flex;
@@ -4699,6 +4741,12 @@ body.dark .exercise-state {
     margin: 0;
     padding: 0;
     list-style: none;
+
+}
+
+.exercise-topic-list[hidden] {
+
+    display: none;
 
 }
 

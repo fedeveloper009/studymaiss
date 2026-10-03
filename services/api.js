@@ -131,6 +131,10 @@
                 auth: false,
             });
         },
+
+        registrarAtividade() {
+            return request("/auth/activity", { method: "POST" });
+        },
     };
 
     /* ---------- Serviço: Usuários ---------- */
